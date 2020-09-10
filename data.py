@@ -17,6 +17,11 @@ PICKLE_PATH = r'DATA\1-16291cells.p'
 CELLS_RANGE = [1, 16291]  # should be an integer (indicates k first cells) or a range of cells (1-16291)
 
 
+"""
+Building PKL files contain all information need to further analysis.
+"""
+
+
 def extract_data_from_pc(cells_range, reduced_amount_of_cells=True):
     cells_range_idx = range(cells_range[0], cells_range[1])
     cells_range_shift_1_idx = [0]+list(range(cells_range[0]+1, cells_range[1] + 1))

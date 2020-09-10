@@ -16,6 +16,10 @@ CHECKPOINT_TSNE_PATH = r'DATA\TSNE_Embedded_1-16291cells_randInt21'  # comes int
 TSNE_IMPORT_EXPORT = False  # FALSE - Import, TRUE - EXPORT
 
 
+"""
+Main script for analysis CD45 data (seqRNA). serves as a main playground.
+"""
+
 def extract_data_from_pickle():
     """
     Retrieves data from PC located in PICKLE_PATH.
@@ -172,7 +176,13 @@ def filter_cells_by_supervised_classification(cells, patients_information, requi
 
 
 def some_correlation_function(patients_information, response_labels, clusterid):
-    x=4
+    """
+    Playground checking correlation of clusters and responders. TODO: Make some order here.
+    :param patients_information:
+    :param response_labels:
+    :param clusterid:
+    :return:
+    """
     ratio_non_responder = []
     threshold = [0.05 + (0.0125)*i for i in range(70)]
     threshold_score = [[0,0,0,0] for i in range(70)]
