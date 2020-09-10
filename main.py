@@ -1,3 +1,5 @@
+from sklearn.metrics import auc
+from dataset import *
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
@@ -10,8 +12,9 @@ import operator
 import seaborn as sns
 import time
 import sys
+from data import filter_genes_by_variance
 PICKLE_PATH = r'DATA\1-16291cells.p'
-PICKLE_PATH = r'DATA\1-16291cells_supervised_classification.p'
+PICKLE_PATH = r'DATA\1-16291cells_all_protein_withoutFilterByVariance_supervised_classification.p'
 CHECKPOINT_TSNE_PATH = r'DATA\TSNE_Embedded_1-16291cells_randInt21'  # comes into play as import OR export path.
 TSNE_IMPORT_EXPORT = False  # FALSE - Import, TRUE - EXPORT
 
@@ -29,7 +32,7 @@ def extract_data_from_pickle():
     return cells_form, gene_names, patients_information
 
 
-def cluster(data, n_clusters):
+def kmeans(data, n_clusters):
     """
     Activates sklearn.kmeans.
     :param data: cells in PKL format.
@@ -62,11 +65,11 @@ def TSNE_embedded(cells):
 
 def visualize(cells, clusters_labels, title=None, centroids=None):
     """
-
-    :param cells:
-    :param clusters_labels:
-    :param title:
-    :param centroids:
+    Visualize 2D representation.
+    :param cells: embedded cells
+    :param clusters_labels: list in number of cells length indicates each cell its cluster.
+    :param title: plot title
+    :param centroids: of the cluster algorithm
     :return:
     """
     X = cells[0]
@@ -110,117 +113,59 @@ def build_confusion_matrix(classification1, classification2):
     return confusion_matrix
 
 
-def filter_by_indexes(indices, cells, patients_information=None):
-    """
-    return reduced cells associated to the corresponding indices.
-    :param indices: indexes list of desirable cells.
-    :param cells: cells from pkl file.
-    :param patients_information: pkl file format
-    :return: reduced cells. and their corresponding patients_information.
-    """
-    if patients_information:
-        return cells[indices, :], [patients_information[i] for i in indices]
-    return cells[indices, :]
+def calculate_auc(values, thresholds):
+
+    X = np.zeros(len(thresholds))
+    Y = np.zeros(len(thresholds))
+    for idx, threshold in enumerate(thresholds):
+        TP = sum([val > threshold for val in values[1]])
+        FP = len(values[1]) - TP
+        TN = sum([val < threshold for val in values[0]])
+        FN = len(values[0]) - TN
+        X[idx] = TP/(TP + FP)
+        Y[idx] = TN/(TN + FN)
+    return auc(X, Y)
 
 
-def filter_by_binary_indices(indices, cells, patients_information=None):
-    """
-    return reduced cells associated to the corresponding indices.
-    :param indices: binary list.
-    :param cells: cells from pkl file.
-    :param patients_information: pkl file format
-    :return: reduced cells. and their corresponding patients_information.
-    """
-    indexes = [i for i in range(len(patients_information)) if indices[i]]
-    if patients_information:
-        return cells[indexes, :], [patients_information[i] for i in range(len(patients_information)) if indices[i]]
-    return cells[indices, :]
-
-
-def expression_of_genes(cells, gene_names = None):
-    """
-    Return (only the indexes) of the highest expression genes. TODO: make the genes amount changeable.
-    :param cells: pkl format
-    :param gene_names: when given, the function return genes names with highest expression also.
-    :return: indexes only. if gene names given, the function return genes names with highest expression also.
-    """
-    activated_genes = sum(np.sum(cells, axis=0) !=0)
-    average_val_genes = np.mean(cells, axis=0)
-    expression_histogram = np.histogram(average_val_genes)
-    expression_histogram_df = np.concatenate((np.expand_dims(expression_histogram[0][:10], axis=0),
-                        np.expand_dims(expression_histogram[1][:10], axis=0)))
-    amount_high_expressed_genes = min(activated_genes * 0.05, sum(expression_histogram[0][-2:]))
-    high_expressed_percentage = amount_high_expressed_genes / activated_genes
-    indices_of_high_expressed_genes = np.argsort(average_val_genes)[-3:]
-    print(f'High expressed genes percent {high_expressed_percentage}')
-    if gene_names:
-        return indices_of_high_expressed_genes, operator.itemgetter(*indices_of_high_expressed_genes)(gene_names)
-    return indices_of_high_expressed_genes
-
-
-def filter_cells_by_supervised_classification(cells, patients_information, required_cell_type="T cells"):
-    """
-    patients_information contains 'supervised classification' field, which is the classification of the cell
-    defined by gene expression in 80% of the cells, and the remaining 20% were done by manual process.
-    the function filters cells by cell-type was done by this classification.
-    :param cells: pkl format.
-    :param patients_information: pkl format.
-    :param required_cell_type: name of the desired cell-type.
-    :return: cells of the desired cell-type
-    """
-    supervised_classification = [p["supervised classification"] for p in patients_information]
-
-    indices_list = [1 if required_cell_type in cl else 0 for cl in supervised_classification]
-    cells, patients_information = filter_by_binary_indices(indices_list, cells, patients_information)
-    return cells, patients_information
-
-
-def some_correlation_function(patients_information, response_labels, clusterid):
+def correlation_response_clusters(dataset, clusters): #cells_patients_names, response_labels, clusters):
     """
     Playground checking correlation of clusters and responders. TODO: Make some order here.
-    :param patients_information:
+    :param cells_patients_names:
     :param response_labels:
-    :param clusterid:
+    :param clusters:
     :return:
     """
-    ratio_non_responder = []
-    threshold = [0.05 + (0.0125)*i for i in range(70)]
-    threshold_score = [[0,0,0,0] for i in range(70)]
-    ratio_responder = []
-    for patient in set([p['patient details'] for p in patients_information]):
-        indices = [i for i in range(len(patients_information)) if patients_information[i]['patient details']==patient]
-        response = response_labels[indices[0]]
-        cluster_cells_of_patient = [clusterid[i] for i in indices]
-        cluster_1_amount = sum(cluster_cells_of_patient)
-        ratio = cluster_1_amount/len(cluster_cells_of_patient)
-        if response:
-            ratio_responder.append(ratio)
-            for i in range(70):
-                if threshold[i]>ratio:
-                    threshold_score[i][0]+=1
-                else:
-                    threshold_score[i][1] += 1
-        else:
-            ratio_non_responder.append(ratio)
-            for i in range(70):
-                if threshold[i]>ratio:
-                    threshold_score[i][2]+=1
-                else:
-                    threshold_score[i][3] += 1
+    clusters_ratio = [[], []]   # ration between 2 clusters for responder/non-responder.
+    for patient in dataset.patients.get_patients_names():
+        patient_cells_idx = [i for i in range(len(dataset)) if dataset[i][1].patient_details == patient]
+        patient_response = dataset[patient_cells_idx[0]][1].patient_response
+        clusters_cells_of_patient = [clusters[i] for i in patient_cells_idx]
+        cluster_1_amount = sum(clusters_cells_of_patient)
+        patient_ratio = cluster_1_amount/len(clusters_cells_of_patient)
+        clusters_ratio[patient_response].append(patient_ratio)
+
+    avg_1 = sum(clusters_ratio[1]) / len(clusters_ratio[1])
+    avg_0 = sum(clusters_ratio[0]) / len(clusters_ratio[0])
+    print(f'responder (average ration {avg_1}:')
+    print(clusters_ratio[1])
+    print(f'non-responder: (average ration {avg_0}')
+    print(clusters_ratio[0])
 
 
+    condition = avg_1 > avg_0
+    _range = [min(clusters_ratio[1]), max(clusters_ratio[0])] if condition \
+        else [min(clusters_ratio[0]), max(clusters_ratio[1])]
+    values = (clusters_ratio[0], clusters_ratio[1]) if condition \
+        else (clusters_ratio[1], clusters_ratio[0])
+    if _range[1] < _range[0]:
+        return 1
+    eps = 0.0005
+    thresholds = sorted([i+eps for i in values[0] if _range[1] >= i >= _range[0]] +
+                        [i-eps for i in values[1] if _range[1] >= i >= _range[0]])
+    return calculate_auc(values, thresholds)
 
-    print(f'responder:')
-    print(ratio_responder)
-    print(sum(ratio_responder)/len(ratio_responder))
-    print(f'non-responder:')
-    print(ratio_non_responder)
-    print(sum(ratio_non_responder) / len(ratio_non_responder))
-    print(threshold_score)
-    print(threshold)
 
-
-def heatmap_high_epresssed_gene_of_cluster(cells, clusters):
+def heatmap_high_epresssed_gene_of_cluster(dataset, clusters=None):
     """
     Shows Seaborn visualized heat-map of clusters of cells and their high expressed genes.
     Made by expression_of_genes function that returns the high expression genes and is activated
@@ -231,36 +176,87 @@ def heatmap_high_epresssed_gene_of_cluster(cells, clusters):
     """
     indices_of_high_expressed_genes = []
     heatmap_order = []
+    if clusters is None:
+        clusters = dataset.patients['keren_cluster']
     for cluster in set(clusters):
         cluster_indices = [i for i in range(len(clusters)) if cluster==clusters[i]]
         heatmap_order += cluster_indices
-        cluster_cells = filter_by_indexes(cluster_indices, cells)
+        cluster_dataset = dataset[cluster_indices]
         # cluster_cells[:, expression_of_genes(cluster_cells, gene_names)]
-        indices_of_high_expressed_genes += expression_of_genes(cluster_cells).tolist()
+        indices_of_high_expressed_genes += cluster_dataset.get_high_expressed_genes()[0].tolist()
     # indices_of_high_expressed_genes = set(indices_of_high_expressed_genes)
     heatmap_x = cells[heatmap_order, :][:, list(indices_of_high_expressed_genes)]
     ax = sns.heatmap(heatmap_x)
     plt.show()
 
+def article_heatmap(dataset):
+    path = r'DATA\high expressed genes list based on article5.txt'
+    with open(path, 'r') as f:
+        lines = f.readlines()
+    genes = [l.replace("\n", "") for l in lines if len(l) > 1]
+    indices_of_high_expressed_genes =[]
+    li = [(i, dataset.gene_names[i]) for i in range(len(dataset.gene_names))]
+    for gene in genes:
+        for idx, gg in li:
+            if gene==gg:
+                indices_of_high_expressed_genes.append(idx)
+    heatmap_order = []
+    clusters = dataset.patients['keren_cluster']
+    for cluster in set(clusters):
+        cluster_indices = [i for i in range(len(clusters)) if cluster == clusters[i]]
+        heatmap_order += cluster_indices
+
+    heatmap_x = cells[heatmap_order, :][:, list(indices_of_high_expressed_genes)]
+    ax = sns.heatmap(heatmap_x)
+    plt.show()
+
+
+def main(cells, gene_names, patients_information):
+
+    dataset = RNAseq_Dataset(cells, patients_information, gene_names)
+
+    # dataset = dataset.filter_cells_by_supervised_classification()
+    article_heatmap(dataset)
+
+    # # cells, gene_names = filter_genes_by_variance(cells, gene_names)
+    # clusters, error, nfound = kcluster(cells, nclusters=2, dist='c')   # dist 'c' is pearson correlation distance
+    # auc = correlation_response_clusters(patients.patient_details,
+    #                               patients.response_label,
+    #                               patients.keren_cluster)
+    #
+    # print(f'AUC: {auc}')
+    _breakpoint = 0
+    # cells, patients_information = filter_cells_by_supervised_classification(cells, patients_information)
+    # ret = expression_of_genes(cells, gene_names)
+    # [i for i in range(len(ret[1])) if ret[1][i] == 'CD28'] + ['length' + str(len(ret[1]))]
+    # kmeans_clusters_euc = kmeans(cells, 2)
+    # kmeans_clusters_pearson, error, nfound = kcluster(cells, nclusters=2, dist='c')   # dist 'c' is pearson correlation distance
+    #
+    # # some_correlation_function(patients_information, response_labels, kmeans_clusters)
+    # some_correlation_function(patients_information, response_labels, kmeans_clusters_euc)
+    # print(build_confusion_matrix(response_labels, kmeans_clusters_euc))
+
+
 
 if __name__ == '__main__':
-    # path = r'C:\Users\itay\Desktop\Technion studies\Keren Laboratory\python_playground\Data\smaller_group_of_cells.txt'
-    # save_smaller_file(path, 60)
     cells, gene_names, patients_information = extract_data_from_pickle()
-    cells, patients_information = filter_cells_by_supervised_classification(cells, patients_information)
+
+
+    main(cells, gene_names, patients_information)
+    # cells, patients_information = filter_cells_by_supervised_classification(cells, patients_information)
     # expression_of_genes(cells, patients_information, gene_names)
     # It has to be decided the order of actions of tSNE and k-means.
     # embedded_cells = TSNE_embedded(cells)
     # cells = np.array(embedded_cells).T    # in order to perform cluster on embedded points.
 
-    keren_clusters = [p['keren cluster'] for p in patients_information]
-    response_labels = [p['response label'] for p in patients_information]
-    kmeans_clusters = cluster(cells, 2)
-
-    clusterid, error, nfound = kcluster(cells, nclusters=2, dist='c')   # dist 'c' is pearson correlation distance
+    # keren_clusters = [p['keren cluster'] for p in patients_information]
+    # response_labels = [p['response label'] for p in patients_information]
+    # kmeans_clusters = cluster(cells, 2)
+    #
+    # clusterid, error, nfound = kcluster(cells, nclusters=2, dist='c')   # dist 'c' is pearson correlation distance
     # some_correlation_function(patients_information, response_labels, kmeans_clusters)
-    some_correlation_function(patients_information, response_labels, clusterid)
-    print(build_confusion_matrix(response_labels, clusterid))
+    # some_correlation_function(patients_information, response_labels, clusterid)
+    # print(build_confusion_matrix(response_labels, clusterid))
     # heatmap(cells, keren_clusters)
     # kmeans_clusters = cluster(cells, 2)
     # print(build_confusion_matrix(response_labels, kmeans_clusters))

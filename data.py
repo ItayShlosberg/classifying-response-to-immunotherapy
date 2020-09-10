@@ -13,7 +13,7 @@ CD45_CELLS_INFORMATION_PATH = r'Data\source data\GSE120575_patient_ID_single_cel
 KEREN_CELL_CLUSTERS_PATH = r'C:\Users\itay\Desktop\Technion studies\Keren Laboratory\research\articles\Tables and files article5\Table S1 - A Summary of Data Related to All Single-Cells Analysis, Related to Figure 1.xlsx'
 ROW_CD45_CELLS_DATA_PATH = r'Data\source data\GSE120575_Sade_Feldman_melanoma_single_cells_TPM_GEO.txt'
 PROTEIN_CODING_FILE = r'Data\gene_ens_map.xlsx'
-PICKLE_PATH = r'DATA\1-16291cells.p'
+PICKLE_PATH = r'DATA\1-16291cells_all_protein_conding_genes(withoutFilterByVariance).p'
 CELLS_RANGE = [1, 16291]  # should be an integer (indicates k first cells) or a range of cells (1-16291)
 
 
@@ -139,8 +139,8 @@ if __name__ == '__main__':
         print(f'current range {cells_range}')
         cells, gene_names, patients_information = extract_data_from_pc(cells_range)
         if idx == 0:
-            cells, gene_names = keeps_protein_coding_only(cells, gene_names)
-            cells, relevant_genes = filter_genes_by_variance(cells, gene_names)
+            cells, relevant_genes = keeps_protein_coding_only(cells, gene_names)
+            # cells, relevant_genes = filter_genes_by_variance(cells, relevant_genes)
         else:
             cells = keep_relevant_genes(cells, relevant_genes, gene_names)
 

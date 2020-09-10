@@ -4,8 +4,8 @@ import pickle
 from collections import Counter
 
 TABLE_PATH = r'C:\Users\itay\Desktop\Technion studies\Keren Laboratory\research\articles\Tables and files article5\additional files\supervised_analysis.xlsx'
-ORIGIN_PICKLE_PATH = r'DATA\1-16291cells.p'
-ADDED_INFORMATION_PICKLE_PATH = r'DATA\1-16291cells_supervised_classification.p'
+ORIGIN_PICKLE_PATH = r'DATA\1-16291cells_all_protein_withoutFilterByVariance.p'
+ADDED_INFORMATION_PICKLE_PATH = r'DATA\1-16291cells_all_protein_withoutFilterByVariance_supervised_classification.p'
 
 
 def save_to_pickle(cells_form, gene_names, patients_information):
