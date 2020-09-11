@@ -8,9 +8,12 @@ import operator
 import pandas as pd
 import math
 from termcolor import colored
+from supervised_classification import *
 
 CD45_CELLS_INFORMATION_PATH = r'Data\source data\GSE120575_patient_ID_single_cells.txt'
-KEREN_CELL_CLUSTERS_PATH = r'C:\Users\itay\Desktop\Technion studies\Keren Laboratory\research\articles\Tables and files article5\Table S1 - A Summary of Data Related to All Single-Cells Analysis, Related to Figure 1.xlsx'
+GENERAL_11_CELL_CLUSTERS_PATH = r'C:\Users\itay\Desktop\Technion studies\Keren Laboratory\research\articles\Tables and files article5\Table S1 - A Summary of Data Related to All Single-Cells Analysis, Related to Figure 1.xlsx'
+TCELLS_2_CLUSTERS_PATH = r'C:\Users\itay\Desktop\Technion studies\Keren Laboratory\research\articles\Tables and files article5\additional files\cluster_annot_cd8_cells_2_clusters.xlsx'
+TCELLS_6_CLUSTERS_PATH = r'C:\Users\itay\Desktop\Technion studies\Keren Laboratory\research\articles\Tables and files article5\additional files\cluster_annot_cd8_cells_6_clusters.xlsx'
 ROW_CD45_CELLS_DATA_PATH = r'Data\source data\GSE120575_Sade_Feldman_melanoma_single_cells_TPM_GEO.txt'
 PROTEIN_CODING_FILE = r'Data\gene_ens_map.xlsx'
 PICKLE_PATH = r'DATA\1-16291cells_all_protein_conding_genes(withoutFilterByVariance).p'
@@ -96,13 +99,44 @@ def filter_genes_by_variance(cells, gene_names, required_variance=6):
     return filtered_cells, filtered_genes
 
 
-def extract_keren_clusters(patients_information, cells_range):
-    xls = pd.ExcelFile(KEREN_CELL_CLUSTERS_PATH)
+def extract_11_general_clusters(patients_information, cells_range):
+    xls = pd.ExcelFile(GENERAL_11_CELL_CLUSTERS_PATH)
     df = pd.read_excel(xls, 'Cluster annotation-Fig1B-C')
     match = df.values
-    keren_clusters = operator.itemgetter(*range(cells_range[0], cells_range[1]))(match.tolist())
+    general_11_clusters = operator.itemgetter(*range(cells_range[0], cells_range[1]))(match.tolist())
     for idx, patient in enumerate(patients_information):
-        patient['keren cluster'] = keren_clusters[idx][1]
+        patient['general 11 cluster'] = general_11_clusters[idx][1]
+
+    return patients_information
+
+
+
+def extract_Tcell_2_clusters(patients_information):
+    xls = pd.ExcelFile(TCELLS_2_CLUSTERS_PATH)
+    df = pd.read_excel(xls)
+    match = df.values
+    match_dict = {k[0]: k[1] for k in match}
+    for patient in patients_information:
+        val = match_dict.get(patient['cell id'], None)
+        if val:
+            patient['T-cell 2 cluster'] = val
+        else:
+            patient['T-cell 2 cluster'] = None
+
+    return patients_information
+
+
+def extract_Tcell_6_clusters(patients_information):
+    xls = pd.ExcelFile(TCELLS_6_CLUSTERS_PATH)
+    df = pd.read_excel(xls)
+    match = df.values
+    match_dict = {k[0]: k[1] for k in match}
+    for patient in patients_information:
+        val = match_dict.get(patient['cell id'], None)
+        if val:
+            patient['T-cell 6 cluster'] = val
+        else:
+            patient['T-cell 6 cluster'] = None
 
     return patients_information
 
@@ -140,7 +174,7 @@ if __name__ == '__main__':
         cells, gene_names, patients_information = extract_data_from_pc(cells_range)
         if idx == 0:
             cells, relevant_genes = keeps_protein_coding_only(cells, gene_names)
-            # cells, relevant_genes = filter_genes_by_variance(cells, relevant_genes)
+            # cells, relevant_genes = filter_genes_by_variance(cells, relevant_genes) # TODO: variance not in use.
         else:
             cells = keep_relevant_genes(cells, relevant_genes, gene_names)
 
@@ -151,9 +185,12 @@ if __name__ == '__main__':
                                  'treatment': p[6],
                                  'response label': (1 if p[5] == "Responder" else 0)}
                                 for p in patients_information]
-        extract_keren_clusters(patients_information, cells_range)
+        extract_11_general_clusters(patients_information, cells_range)
 
         all_cells = np.concatenate((all_cells, cells)) if idx else cells
         all_patients_informations += patients_information
 
+    extract_Tcell_2_clusters(all_patients_informations)
+    extract_Tcell_6_clusters(all_patients_informations)
+    add_supervised_cell_types_to_patients(all_patients_informations)
     save_to_pickle(all_cells, relevant_genes, all_patients_informations)

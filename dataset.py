@@ -94,8 +94,10 @@ class Patients:
                                                                            p_dict['response'],
                                                                            p_dict['treatment'],
                                                                            p_dict.get('response label', None),
-                                                                           p_dict.get('keren cluster', None),
-                                                                           p_dict.get('supervised classification', None)))
+                                                                           p_dict.get('general 11 cluster', None),
+                                                                           p_dict.get('supervised classification', None),
+                                                                           p_dict.get('T-cell 2 cluster', None),
+                                                                           p_dict.get('T-cell 6 cluster', None)))
             elif isinstance(patient_structure[1], Patient_information_cell):
                 self.patients_list = patient_structure
         self.length = len(self.patients_list)
@@ -130,16 +132,26 @@ class Patients:
 
 
 class Patient_information_cell:
-    def __init__(self, sample_index, cell_id, patient_details, response, treatment, response_label, keren_cluster,
-                 supervised_classification):
+    def __init__(self, sample_index,
+                 cell_id,
+                 patient_details,
+                 response,
+                 treatment,
+                 response_label,
+                 general_11_cluster,
+                 supervised_classification,
+                 t_cell_2_cluster,
+                 t_cell_6_cluster):
         self.sample_index = sample_index
         self.cell_id = cell_id
         self.patient_details = patient_details
         self.response = response
         self.treatment = treatment
         self.response_label = response_label
-        self.keren_cluster = keren_cluster
+        self.general_11_cluster = general_11_cluster
         self.supervised = supervised_classification
+        self.t_cell_2_cluster = t_cell_2_cluster
+        self.t_cell_6_cluster = t_cell_6_cluster
 
     def belongs_to_cell_type(self, cell_type):
         return cell_type in self.supervised

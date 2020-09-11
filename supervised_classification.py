@@ -17,10 +17,7 @@ def extract_data_from_pickle():
     return cells_form, gene_names, patients_information
 
 
-if __name__ == '__main__':
-
-    cells, gene_names, patients_information = extract_data_from_pickle()
-
+def get_supervised_cell_types_list():
     xls = pd.ExcelFile(TABLE_PATH)
     df = pd.read_excel(xls)
 
@@ -28,7 +25,7 @@ if __name__ == '__main__':
     columns = list(df.columns)
     new_row = [columns[0]] + [x if type(x) == int else 0 for x in columns[1:]]
     df.loc[29] = new_row
-    # Now, we change the columns to integers to avoid confusion.
+    # Now, changes the columns to integers to avoid confusion.
     new_columns = {columns[i]:i for i in range(15245)}
     cell_types_list = df.rename(columns=new_columns).values
 
@@ -37,19 +34,35 @@ if __name__ == '__main__':
     def remove_zeros_from_list(l):
         return [i for i in l if i!=0]
     cell_types_list = [(cell_type[0], remove_zeros_from_list(cell_type[1:]))for cell_type in cell_types_list]
+    return cell_types_list
 
-    # we add the types of every cell to patients_information.
+
+def add_cell_type_to_cell_patients(patients_information, cell_types_list):
+    # adds the types of every cell to patients_information.
     for cell in range(1, 16292):
         print(f'working on cell number: {cell}')
-        corresponding_cell_idx = cell-1 # (1-16291) to (0-16290)
+        corresponding_cell_idx = cell-1     # (1-16291) to (0-16290)
         current_cell_types = []
         for cell_type in cell_types_list:
-            # print(f'    cell type {cell_type[0]}')
             if cell in cell_type[1]:
                 current_cell_types.append(cell_type[0])
         patients_information[corresponding_cell_idx]['supervised classification'] = current_cell_types
 
-    # we save the new information added
+    return patients_information
 
+
+def add_supervised_cell_types_to_patients(patients_information):
+    cell_types_list = get_supervised_cell_types_list()
+    patients_information = add_cell_type_to_cell_patients(patients_information, cell_types_list)
+    return patients_information
+
+
+if __name__ == '__main__':
+
+    cells, gene_names, patients_information = extract_data_from_pickle()
+
+    patients_information = add_supervised_cell_types_to_patients(patients_information)
+
+    # saves the new information added
     save_to_pickle(cells, gene_names, patients_information)
     print(f"saved in {ADDED_INFORMATION_PICKLE_PATH}")

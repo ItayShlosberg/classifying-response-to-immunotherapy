@@ -1,4 +1,4 @@
-from sklearn.metrics import auc
+from sklearn.metrics import auc, roc_curve, roc_auc_score
 from dataset import *
 import numpy as np
 from sklearn.cluster import KMeans
@@ -13,15 +13,12 @@ import seaborn as sns
 import time
 import sys
 from data import filter_genes_by_variance
-PICKLE_PATH = r'DATA\1-16291cells.p'
-PICKLE_PATH = r'DATA\1-16291cells_all_protein_withoutFilterByVariance_supervised_classification.p'
+
+# PICKLE_PATH = r'DATA\1-16291cells.p'
+PICKLE_PATH = r'DATA\1-16291cells_all_protein_conding_genes(withoutFilterByVariance).p'
 CHECKPOINT_TSNE_PATH = r'DATA\TSNE_Embedded_1-16291cells_randInt21'  # comes into play as import OR export path.
 TSNE_IMPORT_EXPORT = False  # FALSE - Import, TRUE - EXPORT
 
-
-"""
-Main script for analysis CD45 data (seqRNA). serves as a main playground.
-"""
 
 def extract_data_from_pickle():
     """
@@ -102,32 +99,31 @@ def build_confusion_matrix(classification1, classification2):
     :return: confusion matrix in DataFrame format.
     """
     match_classifications = list(zip(classification1, classification2))
-    confusion_matrix = np.zeros((np.max(classification1)+1, np.max(classification2)+1))
+    confusion_matrix = np.zeros((np.max(classification1) + 1, np.max(classification2) + 1))
     for appearance in match_classifications:
         confusion_matrix[appearance[0], appearance[1]] += 1
 
-    columns = ['V'+str(i) for i in range(max(classification2)+1)]
-    index = ['G'+str(i) for i in range(max(classification1)+1)]
+    columns = ['V' + str(i) for i in range(max(classification2) + 1)]
+    index = ['G' + str(i) for i in range(max(classification1) + 1)]
     confusion_matrix = pd.DataFrame(confusion_matrix, columns=columns, index=index)
 
     return confusion_matrix
 
 
 def calculate_auc(values, thresholds):
-
     X = np.zeros(len(thresholds))
     Y = np.zeros(len(thresholds))
     for idx, threshold in enumerate(thresholds):
-        TP = sum([val > threshold for val in values[1]])
-        FP = len(values[1]) - TP
-        TN = sum([val < threshold for val in values[0]])
-        FN = len(values[0]) - TN
-        X[idx] = TP/(TP + FP)
-        Y[idx] = TN/(TN + FN)
+        TP = sum([val[0] > threshold for val in values if val[1]])
+        FP = len([val for val in values if val[1]]) - TP
+        TN = sum([val[0] <= threshold for val in values if not val[1]])
+        FN = len([val for val in values if not val[1]]) - TN
+        X[idx] = TP / (TP + FP)
+        Y[idx] = TN / (TN + FN)
     return auc(X, Y)
 
 
-def correlation_response_clusters(dataset, clusters): #cells_patients_names, response_labels, clusters):
+def correlation_response_clusters(dataset, clusters):  # cells_patients_names, response_labels, clusters):
     """
     Playground checking correlation of clusters and responders. TODO: Make some order here.
     :param cells_patients_names:
@@ -135,34 +131,53 @@ def correlation_response_clusters(dataset, clusters): #cells_patients_names, res
     :param clusters:
     :return:
     """
-    clusters_ratio = [[], []]   # ration between 2 clusters for responder/non-responder.
+    clusters_ratio = [[], []]  # ration between 2 clusters for responder/non-responder.
     for patient in dataset.patients.get_patients_names():
         patient_cells_idx = [i for i in range(len(dataset)) if dataset[i][1].patient_details == patient]
-        patient_response = dataset[patient_cells_idx[0]][1].patient_response
+        patient_response = dataset[patient_cells_idx[0]][1].response_label
         clusters_cells_of_patient = [clusters[i] for i in patient_cells_idx]
         cluster_1_amount = sum(clusters_cells_of_patient)
-        patient_ratio = cluster_1_amount/len(clusters_cells_of_patient)
+        patient_ratio = cluster_1_amount / len(clusters_cells_of_patient)
         clusters_ratio[patient_response].append(patient_ratio)
 
     avg_1 = sum(clusters_ratio[1]) / len(clusters_ratio[1])
     avg_0 = sum(clusters_ratio[0]) / len(clusters_ratio[0])
     print(f'responder (average ration {avg_1}:')
-    print(clusters_ratio[1])
+    print(sorted(clusters_ratio[1]))
     print(f'non-responder: (average ration {avg_0}')
-    print(clusters_ratio[0])
+    print(sorted(clusters_ratio[0]))
 
+    y_lbl = [1] * len(clusters_ratio[0]) + [0] * len(clusters_ratio[1])
+    y_score = clusters_ratio[0] + clusters_ratio[1]
+    print(f"op auc:{roc_auc_score(y_lbl, y_score)}")
 
-    condition = avg_1 > avg_0
-    _range = [min(clusters_ratio[1]), max(clusters_ratio[0])] if condition \
-        else [min(clusters_ratio[0]), max(clusters_ratio[1])]
-    values = (clusters_ratio[0], clusters_ratio[1]) if condition \
-        else (clusters_ratio[1], clusters_ratio[0])
-    if _range[1] < _range[0]:
-        return 1
-    eps = 0.0005
-    thresholds = sorted([i+eps for i in values[0] if _range[1] >= i >= _range[0]] +
-                        [i-eps for i in values[1] if _range[1] >= i >= _range[0]])
-    return calculate_auc(values, thresholds)
+    y_lbl = [0] * len(clusters_ratio[0]) + [1] * len(clusters_ratio[1])
+    y_score = clusters_ratio[0] + clusters_ratio[1]
+
+    return roc_auc_score(y_lbl, y_score)
+
+    # condition = avg_1 > avg_0
+    # _range = [min(clusters_ratio[1]), max(clusters_ratio[0])] if condition \
+    #     else [min(clusters_ratio[0]), max(clusters_ratio[1])]
+    # values = [(c, 0) for c in clusters_ratio[0]] + [(c, 1) for c in clusters_ratio[1]] if condition \
+    #     else [(c, 0) for c in clusters_ratio[1]] + [(c, 1) for c in clusters_ratio[0]]
+    # values = sorted(values)
+    # if _range[1] < _range[0]:
+    #     return 1
+    # eps = 0.00005
+    # # thresholds = sorted([i+eps for i in values[0] if _range[1] >= i >= _range[0]] +
+    # #                     [i-eps for i in values[1] if _range[1] >= i >= _range[0]])
+    # # threshold building:
+    # thresholds = []
+    # i = 0
+    # while i < len(values):
+    #     try:
+    #         next_threshold_idx = [v[1] for v in values].index(1, i)
+    #         thresholds.append(values[next_threshold_idx][0] - eps)
+    #         i = [v[1] for v in values].index(0, next_threshold_idx)
+    #     except:
+    #         i = len(values)
+    # return calculate_auc(values, thresholds)
 
 
 def heatmap_high_epresssed_gene_of_cluster(dataset, clusters=None):
@@ -177,9 +192,9 @@ def heatmap_high_epresssed_gene_of_cluster(dataset, clusters=None):
     indices_of_high_expressed_genes = []
     heatmap_order = []
     if clusters is None:
-        clusters = dataset.patients['keren_cluster']
+        clusters = dataset.patients['general_11_cluster']
     for cluster in set(clusters):
-        cluster_indices = [i for i in range(len(clusters)) if cluster==clusters[i]]
+        cluster_indices = [i for i in range(len(clusters)) if cluster == clusters[i]]
         heatmap_order += cluster_indices
         cluster_dataset = dataset[cluster_indices]
         # cluster_cells[:, expression_of_genes(cluster_cells, gene_names)]
@@ -189,19 +204,24 @@ def heatmap_high_epresssed_gene_of_cluster(dataset, clusters=None):
     ax = sns.heatmap(heatmap_x)
     plt.show()
 
+
 def article_heatmap(dataset):
+    """
+    taking the genes mentioned in article5 and draw heatmap of expression of those gene of the input cells
+    :param dataset: cells
+    """
     path = r'DATA\high expressed genes list based on article5.txt'
     with open(path, 'r') as f:
         lines = f.readlines()
     genes = [l.replace("\n", "") for l in lines if len(l) > 1]
-    indices_of_high_expressed_genes =[]
+    indices_of_high_expressed_genes = []
     li = [(i, dataset.gene_names[i]) for i in range(len(dataset.gene_names))]
     for gene in genes:
         for idx, gg in li:
-            if gene==gg:
+            if gene == gg:
                 indices_of_high_expressed_genes.append(idx)
     heatmap_order = []
-    clusters = dataset.patients['keren_cluster']
+    clusters = dataset.patients['general_11_cluster']
     for cluster in set(clusters):
         cluster_indices = [i for i in range(len(clusters)) if cluster == clusters[i]]
         heatmap_order += cluster_indices
@@ -212,19 +232,22 @@ def article_heatmap(dataset):
 
 
 def main(cells, gene_names, patients_information):
-
+    cells, gene_names = filter_genes_by_variance(cells, gene_names)
     dataset = RNAseq_Dataset(cells, patients_information, gene_names)
+    indexes = [idx for idx in range(len(patients_information)) if patients_information[idx]['T-cell 6 cluster']]
+    dataset = dataset[indexes]
+    clusters, error, nfound = kcluster(dataset.cells, nclusters=2, dist='c')  # dist 'c' is pearson correlation distance
 
     # dataset = dataset.filter_cells_by_supervised_classification()
-    article_heatmap(dataset)
+    # article_heatmap(dataset)
 
-    # # cells, gene_names = filter_genes_by_variance(cells, gene_names)
-    # clusters, error, nfound = kcluster(cells, nclusters=2, dist='c')   # dist 'c' is pearson correlation distance
-    # auc = correlation_response_clusters(patients.patient_details,
-    #                               patients.response_label,
-    #                               patients.keren_cluster)
+    converted_tcell_clusters = [1 if tt == 'CD8_B' else 0 for tt in dataset.patients["t_cell_2_cluster"]]
+    print(build_confusion_matrix(clusters, converted_tcell_clusters))
+    auc = correlation_response_clusters(dataset, clusters)
+    print(f'AUC: {auc}', end="\n\n\n")
+    auc = correlation_response_clusters(dataset, converted_tcell_clusters)
     #
-    # print(f'AUC: {auc}')
+    print(f'AUC: {auc}')
     _breakpoint = 0
     # cells, patients_information = filter_cells_by_supervised_classification(cells, patients_information)
     # ret = expression_of_genes(cells, gene_names)
@@ -237,10 +260,8 @@ def main(cells, gene_names, patients_information):
     # print(build_confusion_matrix(response_labels, kmeans_clusters_euc))
 
 
-
 if __name__ == '__main__':
     cells, gene_names, patients_information = extract_data_from_pickle()
-
 
     main(cells, gene_names, patients_information)
     # cells, patients_information = filter_cells_by_supervised_classification(cells, patients_information)
@@ -267,7 +288,6 @@ if __name__ == '__main__':
     # visualize(embedded_cells, response_labels, 'response_labels')
     # print(build_confusion_matrix(keren_clusters, clusterid))
 
-
     # Cluster algorithm
     # kmeans_clusters = cluster(cells, 2)
     # clusterid, error, nfound = kcluster(cells, nclusters=2, dist='c')   # dist 'c' is pearson correlation distance
@@ -277,4 +297,3 @@ if __name__ == '__main__':
     # visualize(embedded_cells, clusterid, 'pearson')
     # visualize(embedded_cells, clusterid2, 'euc BIO')
     # visualize(cells, labels)
-
