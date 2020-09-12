@@ -32,7 +32,9 @@ class RNAseq_Dataset:
         if isinstance(item, slice):
             return RNAseq_Dataset(self.cells[item], self.patients[item], self.gene_names)
         if isinstance(item, list):
-            if sum([(ii==0 or ii==1) for ii in item]) == len(item):
+            # identify if we are dealing with binary indexes or explicit indexes.
+            if sum([(ii == 0 or ii == 1) for ii in item]) == len(item):
+                # converts to explicit indexes.s
                 item = [i for i in range(len(self)) if item[i]]
             return RNAseq_Dataset(self.cells[item, :], self.patients[item], self.gene_names)
 

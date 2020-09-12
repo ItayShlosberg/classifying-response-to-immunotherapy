@@ -91,8 +91,8 @@ def visualize(cells, clusters_labels, title=None, centroids=None):
 
 def build_confusion_matrix(classification1, classification2):
     """
-    Given two different classifications of the same group (identical length of list
-    with different classifications), builds confusion matrix.
+    Given two different classifications of the same group (different classification lists
+    with the same length), builds confusion matrix.
     :param classification1: list in length of the sample size. each place is the classification of the
      corresponding cell. for example L[i] is the classification of cell number i.
     :param classification2: the second classification list. identified to classification1 structure.
