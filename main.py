@@ -13,6 +13,7 @@ import seaborn as sns
 import time
 import sys
 from data import filter_genes_by_variance
+from sklearn.metrics import confusion_matrix, plot_confusion_matrix, ConfusionMatrixDisplay
 
 # PICKLE_PATH = r'DATA\1-16291cells.p'
 PICKLE_PATH = r'DATA\1-16291cells_all_protein_conding_genes(withoutFilterByVariance).p'
@@ -227,13 +228,25 @@ def article_heatmap(dataset):
         heatmap_order += cluster_indices
 
     heatmap_x = cells[heatmap_order, :][:, list(indices_of_high_expressed_genes)]
-    ax = sns.heatmap(heatmap_x)
+    ax = sns.heatmap(heatmap_x, vmin=4, vmax=8.5, cmap="viridis")
+    plt.show()
+
+
+def visualization_confusion_matrix(labels, predictions):
+    cm = confusion_matrix(labels, predictions)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm,
+                                  display_labels=['non-response', 'response'])
+    disp.plot(include_values=True,
+              cmap='viridis', ax=None, xticks_rotation='horizontal',
+              values_format=None)
+
     plt.show()
 
 
 def main(cells, gene_names, patients_information):
     cells, gene_names = filter_genes_by_variance(cells, gene_names)
     dataset = RNAseq_Dataset(cells, patients_information, gene_names)
+    # article_heatmap(dataset)
     indexes = [idx for idx in range(len(patients_information)) if patients_information[idx]['T-cell 6 cluster']]
     dataset = dataset[indexes]
     clusters, error, nfound = kcluster(dataset.cells, nclusters=2, dist='c')  # dist 'c' is pearson correlation distance
@@ -242,12 +255,14 @@ def main(cells, gene_names, patients_information):
     # article_heatmap(dataset)
 
     converted_tcell_clusters = [1 if tt == 'CD8_B' else 0 for tt in dataset.patients["t_cell_2_cluster"]]
-    print(build_confusion_matrix(clusters, converted_tcell_clusters))
-    auc = correlation_response_clusters(dataset, clusters)
-    print(f'AUC: {auc}', end="\n\n\n")
-    auc = correlation_response_clusters(dataset, converted_tcell_clusters)
-    #
-    print(f'AUC: {auc}')
+
+    visualization_confusion_matrix(dataset.patients['response_label'], dataset.patients['response_label'])
+    # print(build_confusion_matrix(clusters, converted_tcell_clusters))
+    # auc = correlation_response_clusters(dataset, clusters)
+    # print(f'AUC: {auc}', end="\n\n\n")
+    # auc = correlation_response_clusters(dataset, converted_tcell_clusters)
+
+    # print(f'AUC: {auc}')
     _breakpoint = 0
     # cells, patients_information = filter_cells_by_supervised_classification(cells, patients_information)
     # ret = expression_of_genes(cells, gene_names)
@@ -297,3 +312,4 @@ if __name__ == '__main__':
     # visualize(embedded_cells, clusterid, 'pearson')
     # visualize(embedded_cells, clusterid2, 'euc BIO')
     # visualize(cells, labels)
+
