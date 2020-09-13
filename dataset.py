@@ -178,6 +178,8 @@ class Patients:
         if isinstance(item, str):
             return [p.__getattribute__(item) for p in self.patients_list]
         if isinstance(item, list):
+            if not len(item):
+                return Patients()
             if sum([(ii == 0 or ii == 1) for ii in item]) == len(item):
                 item = [i for i in range(len(self)) if item[i]]
             return Patients([self.patients_list[i] for i in item])
