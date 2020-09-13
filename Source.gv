@@ -1,5 +1,0 @@
-digraph {
-    graph [ rankdir=TB ]
-
-    0 [ label="leaf=0.158527717" ]
-}

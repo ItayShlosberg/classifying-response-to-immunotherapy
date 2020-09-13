@@ -1,20 +1,17 @@
-import pandas as pd
-import pandas
-from collections import Counter
-from pycco import process
-import os
-from main import *
+from DL.data_loading import *
 import xgboost as xgb
+from utilities.dataset import *
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-import os
-from sklearn.metrics import confusion_matrix, plot_confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_auc_score
 from sklearn import metrics
-from general_helpers import *
-import yaml
+from utilities.general_helpers import *
+import pickle
 os.environ["PATH"] += os.pathsep + r'C:\Program Files\Graphviz\bin'
 # EXPERIMENT_NAME = "Dummy"
-CONFIG_PATH = r'cfg\xgboost_1_cfg.yaml'
+PICKLE_PATH = r'DATA\1-16291cells_all_protein_conding_genes(withoutFilterByVariance).p'
+# CONFIG_PATH = sys.argv[1] if len(sys.argv)>1 else r'cfg\xgboost_1_cfg.yaml' # for terminal with outer config operation
+# CONFIG_PATH = r'cfg\dummy.yaml'
+CONFIG_PATH = r'cfg\factory_cfg\variance_2_test_percent0.30000000000000004_patients_post_cfg.yaml'
 
 EXPERIMENT_NAME, EXPERIMENTS_FOLDER, config = load_yml(CONFIG_PATH)
 
@@ -33,6 +30,12 @@ def visualization_confusion_matrix(labels, predictions):
     plt.show()
 
 
+def pick_best_threshold(labels, predictions_probs):
+    fpr, tpr, thresholds = metrics.roc_curve(labels, predictions_probs)
+    best_threshold = thresholds[np.argmax(tpr - fpr)]
+    return best_threshold
+
+
 def combine_cells_classification_to_predict_patient_response(dataset, test_idxs, y_pred):
     test_set = dataset[test_idxs]
     ll = [[p.patient_details, p.response_label, y_pred[idx]] for idx, p in enumerate(test_set.patients)]
@@ -41,17 +44,16 @@ def combine_cells_classification_to_predict_patient_response(dataset, test_idxs,
     predictions_probs = df.values.T[1]
     print(f'TEST PATIENT CLASSIFICATION - AUC: {roc_auc_score(labels, predictions_probs)}')
     np.argmax(metrics.roc_curve(labels, predictions_probs)[1] - metrics.roc_curve(labels, predictions_probs)[0])
-    fpr, tpr, thresholds = metrics.roc_curve(labels, predictions_probs)
-    best_threshold = thresholds[np.argmax(tpr-fpr)]
-    print(f"Best threshold {best_threshold}")
-    predictions = threshold_predict(predictions_probs, best_threshold)
+    best_threshold_cell_probs = pick_best_threshold(labels, predictions_probs)
+    print(f"Best threshold {best_threshold_cell_probs}")
+    predictions = threshold_predict(predictions_probs, best_threshold_cell_probs)
     df['final predictions'] = predictions
-    visualization_confusion_matrix(labels, predictions)
+    # visualization_confusion_matrix(labels, predictions)
     df = df[["labels", 'final predictions', 'predictions probabilities']]
     print(df)
 
 
-def threshold_predict(a, threshold=0.5):
+def threshold_predict(a, threshold):
     return (a>=threshold).astype(np.int)
 
 
@@ -65,9 +67,9 @@ def save_model_in_pkl(model):
     pickle.dump((model), open(os.path.join(EXPERIMENTS_FOLDER, EXPERIMENT_NAME, "model.pkl"), "wb"))
 
 
-@experiment_manager(EXPERIMENT_NAME, EXPERIMENTS_FOLDER)
+# @experiment_manager(EXPERIMENT_NAME, EXPERIMENTS_FOLDER)
 def main(test_percent, patients, num_round, early_stopping_rounds, k_folds, variance):
-    cells, gene_names, patients_information = extract_data_from_pickle()
+    cells, gene_names, patients_information = extract_data_from_pickle(PICKLE_PATH)
     origin_dataset = RNAseq_Dataset(cells, patients_information, gene_names)
     if patients == 'post':
         origin_dataset = origin_dataset.get_post_patients_sub_dataset()
@@ -103,25 +105,27 @@ def main(test_percent, patients, num_round, early_stopping_rounds, k_folds, vari
     dtest = xgb.DMatrix(test_dataset.cells, label=test_labels)
     all_predictions = []
 
-    for bst in bsts:
-        ypred = bst.predict(dtest)
-        all_predictions.append(ypred)
-        print(f'TEST CELLS CLASSIFICATION AUC: {roc_auc_score(test_labels, ypred)}')
-        ypred = threshold_predict(ypred)
+    for idx, bst in enumerate(bsts):
+        print(f"INFERENCE - Classifier number {idx+1}")
+        ypred_probs = bst.predict(dtest)
+        all_predictions.append(ypred_probs)
+        print(f'TEST CELLS CLASSIFICATION AUC: {roc_auc_score(test_labels, ypred_probs)}')
+        ypred = threshold_predict(ypred_probs, pick_best_threshold(test_labels, ypred_probs))
         visualization_confusion_matrix(test_labels, ypred)
-        combine_cells_classification_to_predict_patient_response(origin_dataset, test_idxs, ypred)
+        combine_cells_classification_to_predict_patient_response(origin_dataset, test_idxs, ypred_probs)
         print("\n\n\n--------------------------------------------------")
 
-    maj_vote_predictions = majority_vote(all_predictions)
-    print(f'maj vote test AUC: {roc_auc_score(test_labels, maj_vote_predictions)}')
-    maj_vote_predictions = threshold_predict(maj_vote_predictions)
+    maj_vote_predictions_probs = majority_vote(all_predictions)
+    print(f'maj vote test AUC: {roc_auc_score(test_labels, maj_vote_predictions_probs)}')
+    maj_vote_predictions = threshold_predict(maj_vote_predictions_probs, pick_best_threshold(test_labels, maj_vote_predictions_probs))
     visualization_confusion_matrix(test_labels, maj_vote_predictions)
-    combine_cells_classification_to_predict_patient_response(origin_dataset, test_idxs, maj_vote_predictions)
+    combine_cells_classification_to_predict_patient_response(origin_dataset, test_idxs, maj_vote_predictions_probs)
     save_model_in_pkl(bsts)
 
 
 
 if __name__ == '__main__':
+    print(config)
     test_percent = config['DATASET']['test_percent']
     patients = config['DATASET']['patients']
     variance = config['DATASET']['variance']

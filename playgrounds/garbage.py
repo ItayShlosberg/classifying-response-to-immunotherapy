@@ -1,18 +1,5 @@
-from sklearn.metrics import auc
-from dataset import *
 import numpy as np
-from sklearn.cluster import KMeans
-from sklearn.manifold import TSNE
-import matplotlib.pyplot as plt
-import pickle
-import random
-import pandas as pd
-from Bio.Cluster import kcluster
 import operator
-import seaborn as sns
-import time
-import sys
-from data import filter_genes_by_variance
 
 
 def filter_by_indexes(indices, cells, patients_information=None):
@@ -89,3 +76,20 @@ def get_high_expressed_genes(self):
     if self.gene_names:
         return indices_of_high_expressed_genes, operator.itemgetter(*indices_of_high_expressed_genes)(self.gene_names)
     return indices_of_high_expressed_genes
+
+
+def combine_cells_classification_to_predict_patient_response(dataset, test_idxs, y_pred):
+    test_set = dataset[test_idxs]
+    ll = [[p.patient_details, p.response_label, y_pred[idx]] for idx, p in enumerate(test_set.patients)]
+    df = pd.DataFrame(ll, columns=["patients", "labels", 'predictions probabilities']).groupby(['patients']).mean()
+    labels = df.values.T[0]
+    predictions_probs = df.values.T[1]
+    print(f'TEST PATIENT CLASSIFICATION - AUC: {roc_auc_score(labels, predictions_probs)}')
+    np.argmax(metrics.roc_curve(labels, predictions_probs)[1] - metrics.roc_curve(labels, predictions_probs)[0])
+    best_threshold_cell_probs = pick_best_threshold(labels, predictions_probs)
+    print(f"Best threshold {best_threshold_cell_probs}")
+    predictions = threshold_predict(predictions_probs, best_threshold_cell_probs)
+    df['final predictions'] = predictions
+    # visualization_confusion_matrix(labels, predictions)
+    df = df[["labels", 'final predictions', 'predictions probabilities']]
+    print(df)

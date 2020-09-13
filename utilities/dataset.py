@@ -1,20 +1,7 @@
-import random
+from utilities.dataset import *
 import numpy as np
-from sklearn.metrics import auc
-from dataset import *
-import numpy as np
-from sklearn.cluster import KMeans
-from sklearn.manifold import TSNE
-import matplotlib.pyplot as plt
-import pickle
 import random
-import pandas as pd
-from Bio.Cluster import kcluster
 import operator
-import seaborn as sns
-import time
-import sys
-from data import filter_genes_by_variance
 
 
 class RNAseq_Dataset:
@@ -141,7 +128,7 @@ class RNAseq_Dataset:
             random.shuffle(responders)
             random.shuffle(non_responders)
 
-        k_validation = K_validation(self, responders, non_responders, k, verbose=True)
+        k_validation = K_fold_validation(self, responders, non_responders, k, verbose=True)
         return k_validation
 
 
@@ -224,7 +211,7 @@ class Patient_information_cell:
         return cell_type in self.supervised
 
 
-class K_validation:
+class K_fold_validation:
     """Iterator that counts upward forever."""
 
     def __init__(self, dataset, responders, non_responders, k, verbose=False):

@@ -1,7 +1,10 @@
+import numpy as np
 import yaml
 import os
 import pandas
 from collections import Counter
+import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import sys
 
 
@@ -20,9 +23,8 @@ def search_in_list(count_list, key):
     return d.get(key, 0)
 
 
-def is_overlap(l1 , l2):
+def is_there_overlap_in_lists(l1 , l2):
     return len([f for f in l1 if f in l2])!=0
-
 
 
 class Experiments_manager:
@@ -63,7 +65,19 @@ def experiment_manager(experiment_name, experiment_folder):
         return inner
     return experiment_manager_wrapper
 
+
 def load_yml(yml_path):
     with open(yml_path, 'r') as f:
         config = yaml.safe_load(f)
     return config['EXPERIMENT']['experiment_name'], config['EXPERIMENT']['experiments_folder'], config
+
+
+def visualization_confusion_matrix(labels, predictions):
+    cm = confusion_matrix(labels, predictions)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm,
+                                  display_labels=['non-response', 'response'])
+    disp.plot(include_values=True,
+              cmap='viridis', ax=None, xticks_rotation='horizontal',
+              values_format=None)
+
+    plt.show()
