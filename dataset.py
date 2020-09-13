@@ -272,8 +272,8 @@ class K_validation:
             # Prints
             if self.verbose:
                 print(f"K-Fold number {self.idx}")
-                print(f'train patients: {train_patients}')
-                print(f'test patients: {test_patients}')
+                print(f'    train patients (k-1 folds): {train_patients}')
+                print(f'validation patients (one fold): {test_patients}')
 
             train_idxs = [idx for idx, p in enumerate(self.patients['patient_details']) if p in train_patients]
             test_idxs = [idx for idx, p in enumerate(self.patients['patient_details']) if p in test_patients]
