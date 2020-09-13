@@ -10,7 +10,16 @@ from sklearn.model_selection import train_test_split
 import os
 from sklearn.metrics import confusion_matrix, plot_confusion_matrix, ConfusionMatrixDisplay
 from sklearn import metrics
+from general_helpers import *
+import yaml
 os.environ["PATH"] += os.pathsep + r'C:\Program Files\Graphviz\bin'
+# EXPERIMENT_NAME = "Dummy"
+CONFIG_PATH = r'cfg\xgboost_1_cfg.yaml'
+
+EXPERIMENT_NAME, EXPERIMENTS_FOLDER, config = load_yml(CONFIG_PATH)
+
+# EXPERIMENT_NAME = "XGBOOST_all_patients_10percent_testset"
+# EXPERIMENTS_FOLDER = r'DATA\experiments'
 
 
 def visualization_confusion_matrix(labels, predictions):
@@ -27,7 +36,7 @@ def visualization_confusion_matrix(labels, predictions):
 def combine_cells_classification_to_predict_patient_response(dataset, test_idxs, y_pred):
     test_set = dataset[test_idxs]
     ll = [[p.patient_details, p.response_label, y_pred[idx]] for idx, p in enumerate(test_set.patients)]
-    df = pd.DataFrame(ll, columns=["p", "labels", 'pred probabilities']).groupby(['p']).mean()
+    df = pd.DataFrame(ll, columns=["patients", "labels", 'predictions probabilities']).groupby(['patients']).mean()
     labels = df.values.T[0]
     predictions_probs = df.values.T[1]
     print(f'TEST PATIENT CLASSIFICATION - AUC: {roc_auc_score(labels, predictions_probs)}')
@@ -36,8 +45,9 @@ def combine_cells_classification_to_predict_patient_response(dataset, test_idxs,
     best_threshold = thresholds[np.argmax(tpr-fpr)]
     print(f"Best threshold {best_threshold}")
     predictions = threshold_predict(predictions_probs, best_threshold)
-    df['final pred'] = predictions
+    df['final predictions'] = predictions
     visualization_confusion_matrix(labels, predictions)
+    df = df[["labels", 'final predictions', 'predictions probabilities']]
     print(df)
 
 
@@ -51,17 +61,23 @@ def majority_vote(all_predictions):
     return maj_vote_predictions
 
 
-if __name__ == '__main__':
+def save_model_in_pkl(model):
+    pickle.dump((model), open(os.path.join(EXPERIMENTS_FOLDER, EXPERIMENT_NAME, "model.pkl"), "wb"))
 
-    k_folds = 5   # num of folds for k folds
+
+@experiment_manager(EXPERIMENT_NAME, EXPERIMENTS_FOLDER)
+def main(test_percent, patients, num_round, early_stopping_rounds, k_folds, variance):
     cells, gene_names, patients_information = extract_data_from_pickle()
     origin_dataset = RNAseq_Dataset(cells, patients_information, gene_names)
-    # origin_dataset = origin_dataset.get_post_patients_sub_dataset()
-    origin_dataset.filter_genes_by_variance(6)
-    _, _, _, _, train_idxs, test_idxs = origin_dataset.train_test_split(test_size=0.1, shuffle=True)
+    if patients == 'post':
+        origin_dataset = origin_dataset.get_post_patients_sub_dataset()
+    elif patients == 'pre':
+        origin_dataset = origin_dataset.get_baseline_patients_sub_dataset()
+    if variance:
+        origin_dataset.filter_genes_by_variance(variance)
+    _, _, _, _, train_idxs, test_idxs = origin_dataset.train_test_split(test_size=test_percent, shuffle=True)
     training_dataset = origin_dataset[train_idxs]
     test_dataset = origin_dataset[test_idxs]
-
 
     # K fold cross validation
     print("\n\n\n###########################################")
@@ -79,8 +95,7 @@ if __name__ == '__main__':
         evallist = [(dtrain, 'train'), (dval, 'validation')]
 
         # 2. Train model
-        num_round = 10
-        bst = xgb.train(param, dtrain, num_round, evallist, early_stopping_rounds=10)
+        bst = xgb.train(param, dtrain, num_round, evallist, early_stopping_rounds=early_stopping_rounds)
         bsts.append(bst)
         print("\n\n\n###########################################")
 
@@ -102,3 +117,15 @@ if __name__ == '__main__':
     maj_vote_predictions = threshold_predict(maj_vote_predictions)
     visualization_confusion_matrix(test_labels, maj_vote_predictions)
     combine_cells_classification_to_predict_patient_response(origin_dataset, test_idxs, maj_vote_predictions)
+    save_model_in_pkl(bsts)
+
+
+
+if __name__ == '__main__':
+    test_percent = config['DATASET']['test_percent']
+    patients = config['DATASET']['patients']
+    variance = config['DATASET']['variance']
+    num_round = config['XGBOOST']['num_round']
+    early_stopping_rounds = config['XGBOOST']['early_stopping_rounds']
+    k_folds = config['XGBOOST']['k_folds']
+    main(test_percent, patients, num_round, early_stopping_rounds, k_folds, variance)

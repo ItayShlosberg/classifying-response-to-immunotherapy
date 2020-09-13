@@ -1,0 +1,11 @@
+EXPERIMENT:
+  experiment_name: DUMMY
+  experiments_folder: DATA\experiments
+DATASET:
+  test_percent: 0.1
+  variance: 6  # filter genes by variance, 0 - for none
+  patients: ALL # ALL/pre/post
+XGBOOST:
+  k_folds: 5 # num of folds for k folds
+  num_round: 10
+  early_stopping_rounds: 10

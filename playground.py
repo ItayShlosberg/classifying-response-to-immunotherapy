@@ -6,20 +6,34 @@ use: pycco main.py
 for documentations
 """
 
-# for x in range(1, 18):
-#     y = x + 1
-#     z = math.log(y, 2)
-#     print(f" number {x},   log2(TPM+1): {z}")
+
+from general_helpers import *
 
 
-from sklearn.model_selection import train_test_split
-import numpy as np
-n_samples, n_features, n_classes = 10, 2, 2
-data = np.random.randn(n_samples, n_features)  # 10 training examples
-labels = np.random.randint(n_classes, size=n_samples)  # 10 labels
-indices = np.arange(n_samples)
-x1, x2, y1, y2, idx1, idx2 = train_test_split(
-    data, labels, indices, test_size=0.2)
+# em = Experiments_manager("exp1", "Data")
+# em.activate_prints_to_file()
+#     # (r'Data\out.txt')
+# for i in range(10):
+#         print(f"print number {i}")
+#
+# em.finish_run()
+def ff():
+    return 'exp1'
+E = ff()
+D = 'Data'
+@experiment_manager(E, D)
+def main():
+    for i in range(25):
+        print(f"11 decorator print number {i}")
+
+# em.finish_run()
 
 
-_breakpoint = 0
+# print("print number 1")
+
+if __name__ == '__main__':
+    main()
+    E = 'exp2'
+    D = 'Data'
+    main()
+

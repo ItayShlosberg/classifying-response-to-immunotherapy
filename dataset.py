@@ -98,6 +98,7 @@ class RNAseq_Dataset:
         if in_place:
             self.cells = filtered_cells
             self.gene_names = filtered_genes
+        print(f"Dataset was cleared from genes with variance of less than {required_variance}")
         return filtered_cells, filtered_genes
 
     def train_test_split(self, test_size=0.2, shuffle=True, stratify=True):
