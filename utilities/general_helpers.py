@@ -57,7 +57,7 @@ class Experiments_manager:
 def experiment_manager(experiment_name, experiment_folder):
     def experiment_manager_wrapper(func):
         def inner(*args, **kwargs):
-            print(f"Experiment \'{experiment_name}\' has started, prints will be saved in path \'{experiment_folder}\'")
+            print(f"Experiment \'{experiment_name}\' has started, prints will be saved in \'{experiment_folder}\'")
             em = Experiments_manager(experiment_name, experiment_folder).activate_prints_to_file()
             output = func(*args, **kwargs)
             em.finish_run()
@@ -79,5 +79,5 @@ def visualization_confusion_matrix(labels, predictions):
     disp.plot(include_values=True,
               cmap='viridis', ax=None, xticks_rotation='horizontal',
               values_format=None)
-
     plt.show()
+    return cm

@@ -94,7 +94,7 @@ class RNAseq_Dataset:
         :param shuffle:
         :param random_state:
         :param stratify: Always, equal ration of responder to non-responder between test-set and train-set.
-        :return: x_train, x_test, y_train, y_test
+        :return: x_train, x_test, and corresponding indexes
         """
 
         responders = list(set([p.patient_details for p in self.patients if p.response_label]))
@@ -114,14 +114,28 @@ class RNAseq_Dataset:
         train_idxs = [idx for idx, p in enumerate(self.patients['patient_details']) if p in train_patients]
         test_idxs = [idx for idx, p in enumerate(self.patients['patient_details']) if p in test_patients]
 
-        x_train = self.cells[train_idxs]
-        x_test = self.cells[test_idxs]
-        y_train = np.array([p.response_label for p in self.patients[train_idxs]])
-        y_test = np.array([p.response_label for p in self.patients[test_idxs]])
+        x_train = self[train_idxs]
+        x_test = self[test_idxs]
 
-        return x_train, x_test, y_train, y_test, train_idxs, test_idxs
+        return x_train, x_test, train_idxs, test_idxs
+
+    def split_by_patient_names(self, patients_names):
+        """
+        return two sub-datasets. one, contains required patients and the seconds contains the other patients.
+        :param patients_names: list of all the names of patients wanted to be in the first sub-dataset.
+        :return: rnq_seq_dataset instances of the required and not required dataset.
+        """
+        required_idxs = [idx for idx, p in enumerate(self.patients['patient_details']) if p in patients_names]
+        not_required_idxs = [idx for idx, p in enumerate(self.patients['patient_details']) if p not in patients_names]
+        return self[required_idxs], self[not_required_idxs]
 
     def k_fold_cross_validation(self, k, shuffle=True):
+        """
+        Creates K-fold_cross_validation iterator which can be used for training.
+        :param k: number of folds.
+        :param shuffle: if you wand to shuffle the data
+        :return: k_validation iterator instance.
+        """
         responders = list(set([p.patient_details for p in self.patients if p.response_label]))
         non_responders = list(set([p.patient_details for p in self.patients if not p.response_label]))
         if shuffle:
@@ -131,6 +145,9 @@ class RNAseq_Dataset:
         k_validation = K_fold_validation(self, responders, non_responders, k, verbose=True)
         return k_validation
 
+    def get_all_patients_names(self):
+        names = list(set([p for p in self.patients['patient_details']]))
+        return names
 
 class Patients:
     def __init__(self, patient_structure=None):
