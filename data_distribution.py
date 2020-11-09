@@ -1,5 +1,5 @@
 from sklearn.metrics import roc_auc_score
-from utilities.dataset import *
+from utilities.smart_seq_dataset import *
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.manifold import TSNE
@@ -12,8 +12,9 @@ from DL.data_creation import filter_genes_by_variance
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from sklearn.metrics import auc
 from DL.data_loading import *
+from utilities.general_helpers  import *
 # PICKLE_PATH = r'DATA\1-16291cells.p'
-PICKLE_PATH = r'DATA\1-16291cells_all_protein_conding_genes(withoutFilterByVariance).p'
+PICKLE_PATH = r'DATA\RNAseq_DATA.p'
 CHECKPOINT_TSNE_PATH = r'DATA\TSNE_Embedded_1-16291cells_randInt21'  # comes into play as import OR export path.
 TSNE_IMPORT_EXPORT = False  # FALSE - Import, TRUE - EXPORT
 
@@ -123,8 +124,8 @@ def correlation_response_clusters(dataset, clusters):  # cells_patients_names, r
     :return:
     """
     clusters_ratio = [[], []]  # ration between 2 clusters for responder/non-responder.
-    for patient in dataset.patients.get_patients_names():
-        patient_cells_idx = [i for i in range(len(dataset)) if dataset[i][1].patient_details == patient]
+    for patient in set(dataset.cells_information_list['patient_details']):
+        patient_cells_idx = [i for i in range(len(dataset)) if dataset.cells_information_list[i].patient_details == patient]
         patient_response = dataset[patient_cells_idx[0]][1].response_label
         clusters_cells_of_patient = [clusters[i] for i in patient_cells_idx]
         cluster_1_amount = sum(clusters_cells_of_patient)
@@ -222,7 +223,7 @@ def article_heatmap(dataset):
     plt.show()
 
 
-def visualization_confusion_matrix(labels, predictions):
+def visualization_confusion_matrix_notitle(labels, predictions):
     cm = confusion_matrix(labels, predictions)
     disp = ConfusionMatrixDisplay(confusion_matrix=cm,
                                   display_labels=['non-response', 'response'])
@@ -242,17 +243,17 @@ def main(cells, gene_names, patients_information):
     clusters, error, nfound = kcluster(dataset.cells, nclusters=2, dist='c')  # dist 'c' is pearson correlation distance
 
     # dataset = dataset.filter_cells_by_supervised_classification()
-    # article_heatmap(dataset)
+#    article_heatmap(dataset)
 
-    converted_tcell_clusters = [1 if tt == 'CD8_B' else 0 for tt in dataset.patients["t_cell_2_cluster"]]
+    converted_tcell_clusters = [1 if tt == 'CD8_B' else 0 for tt in dataset.cells_information_list['t_cell_2_cluster']]
 
-    visualization_confusion_matrix(dataset.patients['response_label'], dataset.patients['response_label'])
+    visualization_confusion_matrix(clusters, converted_tcell_clusters, 'overlap CD8_2_Cluster', display_labels=['CD8_A', 'CD8_B'])
     # print(build_confusion_matrix(clusters, converted_tcell_clusters))
-    # auc = correlation_response_clusters(dataset, clusters)
-    # print(f'AUC: {auc}', end="\n\n\n")
-    # auc = correlation_response_clusters(dataset, converted_tcell_clusters)
+    auc = correlation_response_clusters(dataset, clusters)
+    print(f'current AUC: {auc}', end="\n\n\n")
+    auc = correlation_response_clusters(dataset, converted_tcell_clusters)
 
-    # print(f'AUC: {auc}')
+    print(f'previous AUC: {auc}')
     _breakpoint = 0
     # cells, patients_information = filter_cells_by_supervised_classification(cells, patients_information)
     # ret = expression_of_genes(cells, gene_names)
@@ -266,6 +267,9 @@ def main(cells, gene_names, patients_information):
 
 
 if __name__ == '__main__':
+    """
+    Defining T-cells states article steps.
+    """
     cells, gene_names, patients_information = extract_data_from_pickle(PICKLE_PATH)
 
     main(cells, gene_names, patients_information)

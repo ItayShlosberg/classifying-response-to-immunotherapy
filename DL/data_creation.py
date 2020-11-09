@@ -3,13 +3,13 @@ import operator
 import math
 from DL.supervised_classification import *
 
-CD45_CELLS_INFORMATION_PATH = r'Data\source data\GSE120575_patient_ID_single_cells.txt'
+CD45_CELLS_INFORMATION_PATH = r'..\Data\source data\GSE120575_patient_ID_single_cells.txt'
 GENERAL_11_CELL_CLUSTERS_PATH = r'C:\Users\itay\Desktop\Technion studies\Keren Laboratory\research\articles\Tables and files article5\Table S1 - A Summary of Data Related to All Single-Cells Analysis, Related to Figure 1.xlsx'
 TCELLS_2_CLUSTERS_PATH = r'C:\Users\itay\Desktop\Technion studies\Keren Laboratory\research\articles\Tables and files article5\additional files\cluster_annot_cd8_cells_2_clusters.xlsx'
 TCELLS_6_CLUSTERS_PATH = r'C:\Users\itay\Desktop\Technion studies\Keren Laboratory\research\articles\Tables and files article5\additional files\cluster_annot_cd8_cells_6_clusters.xlsx'
-ROW_CD45_CELLS_DATA_PATH = r'Data\source data\GSE120575_Sade_Feldman_melanoma_single_cells_TPM_GEO.txt'
-PROTEIN_CODING_FILE = r'Data\gene_ens_map.xlsx'
-PICKLE_PATH = r'DATA\1-16291cells_all_protein_conding_genes(withoutFilterByVariance).p'
+ROW_CD45_CELLS_DATA_PATH = r'..\Data\source data\GSE120575_Sade_Feldman_melanoma_single_cells_TPM_GEO.txt'
+PROTEIN_CODING_FILE = r'..\Data\gene_ens_map.xlsx'
+PICKLE_PATH = r'..\DATA\18.10.20_cells_all_protein_conding_genes(withoutFilterByVariance).p'
 CELLS_RANGE = [1, 16291]  # should be an integer (indicates k first cells) or a range of cells (1-16291)
 
 
