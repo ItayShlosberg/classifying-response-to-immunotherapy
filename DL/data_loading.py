@@ -7,8 +7,17 @@ import pickle
 
 def extract_smart_seq_data_from_pickle(pickle_path):
     """
-    Retrieves data from PC located in PICKLE_PATH.
+    Retrieves 2018 smart_seq data from PC located in PICKLE_PATH.
     :return: cells_form, gene_names, patients_information
     """
     cells_form, gene_names, patients_information = pickle.load(open(pickle_path, "rb"))
     return cells_form, gene_names, patients_information
+
+
+def extract_droplet_data_from_pickle(pickle_path):
+    """
+    Retrieves 2020 droplet data from PC located in PICKLE_PATH.
+    :return: cells_form, gene_names, patients_information
+    """
+    rna_smaple = pickle.load(open(pickle_path, "rb"))
+    return rna_smaple
