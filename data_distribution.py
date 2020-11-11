@@ -270,7 +270,7 @@ if __name__ == '__main__':
     """
     Defining T-cells states article steps.
     """
-    cells, gene_names, patients_information = extract_data_from_pickle(PICKLE_PATH)
+    cells, gene_names, patients_information = extract_smart_seq_data_from_pickle(PICKLE_PATH)
 
     main(cells, gene_names, patients_information)
     # cells, patients_information = filter_cells_by_supervised_classification(cells, patients_information)

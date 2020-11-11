@@ -59,7 +59,7 @@ MAX_EVAL = 500
 patients_type = 'all'
 split_data_path = r'DATA\patients_divisions\train_patients_0.9percent_all.p'
 test_percent = 0.1
-cells, gene_names, patients_information = extract_data_from_pickle(DATA_PATH)
+cells, gene_names, patients_information = extract_smart_seq_data_from_pickle(DATA_PATH)
 whole_rna_seq_dataset = RNAseq_Dataset(cells, patients_information, gene_names)
 
 #region Data preprocess

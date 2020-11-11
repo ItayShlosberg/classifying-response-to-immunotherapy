@@ -115,7 +115,7 @@ def save_model_in_pkl(model):
 
 @experiment_manager(EXPERIMENT_NAME, EXPERIMENTS_FOLDER)
 def main(test_percent, patients, num_round, early_stopping_rounds, k_folds, variance):
-    cells, gene_names, patients_information = extract_data_from_pickle(PICKLE_PATH)
+    cells, gene_names, patients_information = extract_smart_seq_data_from_pickle(PICKLE_PATH)
     origin_dataset = RNAseq_Dataset(cells, patients_information, gene_names)
     if patients == 'post':
         origin_dataset = origin_dataset.get_post_patients_sub_dataset()

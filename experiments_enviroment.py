@@ -23,7 +23,7 @@ def build_datasets(dataset_config):
     patients_type = dataset_config['patients_type']
     variance = dataset_config['variance']
 
-    cells, gene_names, patients_information = extract_data_from_pickle(data_path)
+    cells, gene_names, patients_information = extract_smart_seq_data_from_pickle(data_path)
     whole_rna_seq_dataset = RNAseq_Dataset(cells, patients_information, gene_names)
     # filter by cell type
     # if filter_by_cell_type:

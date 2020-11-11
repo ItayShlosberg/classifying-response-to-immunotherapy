@@ -3,6 +3,10 @@ import numpy as np
 import pickle
 from collections import Counter
 
+"""
+Smart_seq scRNAseqBuilding 2018 Data. classifying cells into cell-types.
+"""
+
 TABLE_PATH = r'C:\Users\itay\Desktop\Technion studies\Keren Laboratory\research\articles\Tables and files article5\additional files\supervised_analysis.xlsx'
 ORIGIN_PICKLE_PATH = r'DATA\1-16291cells_all_protein_withoutFilterByVariance.p'
 ADDED_INFORMATION_PICKLE_PATH = r'DATA\1-16291cells_all_protein_withoutFilterByVariance_supervised_classification.p'
