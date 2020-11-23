@@ -38,7 +38,7 @@ class Cohort_RNAseq:
 
 class RNAseq_Sample:
 
-    def __init__(self, counts, gene_names, samples_list, ens_id_list=None):
+    def __init__(self, counts, gene_names, samples_list, ens_id_list):
         """
         :param counts: 2D-numpy array with rows as genes and columns as cells. The created object'll save the count
         table in a manner which rows are the cells and columns are the genes, for convenience.
@@ -55,15 +55,17 @@ class RNAseq_Sample:
         self.gene_names = gene_names
         self.samples_list = samples_list
         self.ens_id_list = ens_id_list
+        self.cohort_adjustment = False
         self.number_of_genes = len(gene_names)
         self.number_of_cells = len(samples_list)
+        self.cells_information = [Cell_information() for _ in range(self.number_of_cells)]
 
-    def makeover_genes(self, new_gene_list):
-        all_genes_indexes = self.map_indexes(new_gene_list)
-        fixed_counts = np.zeros((self.number_of_cells, len(new_gene_list)))
-        fixed_counts[:, all_genes_indexes] = self.counts
-        self.gene_names = new_gene_list
-        self.number_of_genes = len(new_gene_list)
+    def makeover_genes(self, ens_id_list):
+        all_ens_indexes = self.map_indexes(ens_id_list)
+        fixed_counts = np.zeros((self.number_of_cells, len(ens_id_list)))
+        fixed_counts[:, all_ens_indexes] = self.counts
+        self.ens_id_list = ens_id_list
+        self.number_of_genes = len(all_ens_indexes)
         self.counts = fixed_counts
 
     def map_indexes(self, all_genes):
@@ -76,3 +78,24 @@ class RNAseq_Sample:
             all_genes_indexes.append(idx)
 
         return all_genes_indexes
+
+    def __getitem__(self, item):
+        # if isinstance(item, int):
+        #     return self.counts[item], self.cells_information_list[item]
+        # if isinstance(item, slice):
+        #     return RNAseq_Dataset(self.cells[item], self.cells_information_list[item], self.gene_names)
+        # if isinstance(item, list):
+        #     # identify if we are dealing with binary indexes or explicit indexes.
+        #     if sum([(ii == 0 or ii == 1) for ii in item]) == len(item):
+        #         # converts to explicit indexes.s
+        #         item = [i for i in range(len(self)) if item[i]]
+        #     return RNAseq_Dataset(self.cells[item, :], self.cells_information_list[item], self.gene_names)
+        pass
+
+
+class Cell_information:
+    def __init__(self):
+        self.is_apoptosis = False     # True after discovery the cell is in apoptosis stage.
+        self.cell_type_list = []
+        self.is_classified = False
+        self.is_cancer = False
