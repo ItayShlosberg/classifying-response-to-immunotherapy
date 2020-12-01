@@ -431,7 +431,7 @@ def summary_over_all_samples():
                                        'number of cells classified as cancer',
                                        'number of pos-neg markers conflicts',
                                        'number of cancer-immune conflicts',
-                                       'number of cancer-immune conflicts without tag'])
+                                       'number of pos-neg conflicts without an immune label (many of them are cancer)'])
     samples = [subfolder for subfolder in os.listdir(SAMPLES_PATH)]
 
     # Extract ImmuneCellsMarkersUpdated Excel file from PC and load it into DataFrame.

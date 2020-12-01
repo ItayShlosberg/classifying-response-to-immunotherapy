@@ -31,11 +31,11 @@ import pandas as pd
 from DL.data_loading import extract_droplet_data_from_pickle
 from os.path import join
 
-SAMPLES_PATH = fr'D:\Technion\output files\runs\30.11.20'
-OUTPUT_PATH = fr'D:\Technion\output files\runs\apoptosis\30.11.20'
+SAMPLES_PATH = fr'D:\Technion\output files\runs\1.12.20'
+OUTPUT_PATH = fr'D:\Technion\output files\runs\apoptosis\1.12.20'
 CLUSTER_FOLDER_PATH = r'D:\Technion\DATA\Melanoma\clusters'
 APOPTOSIS_CLUSTERS_PATH = r'D:\Technion\DATA\apoptosis_remove_using_clusters.xlsx'
-SUMMARY_PATH = r'D:\Technion\output files\runs\30.11.20\summary.csv'  # None - if you're not interested in saving a new updated summary.
+SUMMARY_PATH = r'D:\Technion\output files\runs\1.12.20\summary.csv'  # None - if you're not interested in saving a new updated summary.
 MIN_CLUSTER_THRESHOLD = 0.15
 NORMAL_SAMPLES_THRESHOLD = 0.2
 
@@ -162,11 +162,14 @@ def add_apoptosis_summary():
     existing_summary_df['number of apoptosis cells'] = np.zeros(len(existing_summary_df)).astype(np.int)
     all_samples = os.listdir(OUTPUT_PATH)
     updated_apoptosis_df = pd.DataFrame(columns=['sample name',
-                                                 'number cells classified as cancer',
+                                                 'number of cells',
+                                                 'percentage of cells classified cancer or immune',
+                                                 'percentage of apoptosis cells',
+                                                 'percentage of cells with classification (cancer, immune, apoptosis)',
                                                  'number cells classified as immune',
+                                                 'number cells classified as cancer',
                                                  'number cells classified as apoptosis',
-                                                 'cancer_immune_conflict',
-                                                 'percentage of cells with classification ((n_cancer+n_immune)/(n_cells - n_apop)'])
+                                                 'cancer_immune_conflict'])
     for row_index, row in existing_summary_df.iterrows():
         sample_id = row['sample name']
         rna_sample = extract_sample(sample_id, OUTPUT_PATH)
@@ -179,21 +182,20 @@ def add_apoptosis_summary():
                                       if not c_inf.is_apoptosis])
         number_of_cancer_immune_conflict = sum([c_inf.cancer_immune_conflict for c_inf in rna_sample.cells_information
                                                 if not c_inf.is_apoptosis])
-        percentage_of_cells_with_clss = (number_of_cancer_cells + number_of_classified_cells) / \
-                                        (number_of_cells - number_of_apoptosis_cells)
-        updated_apoptosis_df = updated_apoptosis_df.append([sample_id,
-                                                            number_of_cancer_cells,
-                                                            number_of_classified_cells,
-                                                            number_of_apoptosis_cells,
-                                                            number_of_cancer_immune_conflict,
-                                                            percentage_of_cells_with_clss],
-                                                           pd.DataFrame(columns=['sample name',
-                                                            'number cells classified as cancer',
-                                                            'number cells classified as immune',
-                                                            'number cells classified as apoptosis',
-                                                            'cancer_immune_conflict',
-                                                            'percentage of cells with classification ((n_cancer+n_immune)/(n_cells - n_apop)']))
-        # existing_summary_df.at[row_index, 'number of apoptosis cells'] = number_of_apoptosis_cells
+        percentage_of_cells_with_clss = (number_of_cancer_cells + number_of_classified_cells)/number_of_cells
+        percentage_of_apoptosis = number_of_apoptosis_cells/number_of_cells
+        percentage_of_controlled_cells = percentage_of_apoptosis + percentage_of_cells_with_clss
+        updated_apoptosis_df = updated_apoptosis_df.append(pd.DataFrame([[sample_id,
+                                                                          number_of_cells,
+                                                                          percentage_of_cells_with_clss,
+                                                                          percentage_of_apoptosis,
+                                                                          percentage_of_controlled_cells,
+                                                                          number_of_classified_cells,
+                                                                          number_of_cancer_cells,
+                                                                          number_of_apoptosis_cells,
+                                                                          number_of_cancer_immune_conflict]],
+                                                                          columns=updated_apoptosis_df.columns))
+
 
     # for sample_id in [sm for sm in all_samples if not 'csv' in sm]:
     #     rna_sample = extract_sample(sample_id, OUTPUT_PATH)
@@ -203,12 +205,12 @@ def add_apoptosis_summary():
     #     row_index = existing_summary_df[existing_summary_df['sample name'] == sample_id].index[0]
     #     existing_summary_df.at[row_index, 'number of apoptosis cells'] = number_of_apoptosis_cells
 
-    existing_summary_df.to_csv(join(OUTPUT_PATH, 'apoptosis_summary.csv'))
+    updated_apoptosis_df.to_csv(join(OUTPUT_PATH, 'apoptosis_summary.csv'), index= False)
 
 
 if __name__ == '__main__':
-    if not os.path.isdir(OUTPUT_PATH):
-        os.mkdir(OUTPUT_PATH)
+    # if not os.path.isdir(OUTPUT_PATH):
+    #     os.mkdir(OUTPUT_PATH)
     # determine_apoptosis_in_special_samples()
     # determine_apoptosis_in_normal_sample()
     if SUMMARY_PATH:
