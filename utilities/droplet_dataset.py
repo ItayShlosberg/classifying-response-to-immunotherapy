@@ -109,7 +109,7 @@ class RNAseq_Sample:
 
     def __getitem__(self, item):
         """
-        TODO: A pattern to build various index functions.
+        TODO: currently it's only a pattern to build various index functions. use that pattern to build indexing
         :param item:
         :return:
         """
