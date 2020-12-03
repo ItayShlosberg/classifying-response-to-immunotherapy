@@ -32,14 +32,13 @@ import os.path as path
 from DL.data_loading import extract_droplet_data_from_pickle
 from os.path import join
 
-PROJECT_PATH = r'C:\Users\itay\Desktop\Technion studies\Keren Laboratory\python_playground\classifying-response-to-immunotherapy'
-MARKERS_PATH = path.join(PROJECT_PATH, r'Data\ImmuneCellsMarkersUpdated_12.11.20.xlsx')
+MARKERS_PATH = r'D:\Technion studies\Keren Laboratory\Data\tables\ImmuneCellsMarkersUpdated_12.11.20.xlsx'
 CANCER_MARKERS = {'tumor':  ['MLANA', 'PMEL', 'TYR', 'MITF', 'AXL']}
 LYMPHOID = ['T cells', 'CD4 helper T cells', 'CD8 Cytotoxic T cells', 'Regulatory T cells', 'Regulatory CD4 T cells', 'Regulatory CD8 T cells', 'Regulatory CD4_CD8 T cells', 'NKT cells', 'NK cells', 'B cells', 'Activated T cells', 'Senescence T cells', 'Terminal effector', 'Exhausted T cells', 'Stem_like T cells', 'Memory T cells', 'Memory CD4 T cells', 'Memory CD8 T cells', 'Memory CD4_CD8 T cells']
 MYELOID = [['Macrophage_immature', 'Macrophage_mature', 'Monocyte_immature', 'Monocyte_mature', 'cDCs_dendritic_cells', 'pDCs', 'myeloid cells_general_immature', 'myeloid cells_general_mature', 'Neutrophils', 'Granolocytes',]]
-SAMPLES_PATH = fr'C:\Users\itay\Desktop\Technion studies\Keren Laboratory\python_playground\classifying-response-to-immunotherapy\Data\rna_seq200k\all_samples'
+SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\Data\droplet_seq\all_samples'
 PKL_NAME = r'RNA_sample.pkl'
-OUT_FOLDER = r'D:\Technion\output files\runs\1.12.20'
+OUT_FOLDER = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\classifying_cell_types\3.12.20'
 MHC2_GENES = ['HLA-DM', 'HLA-DMA', 'HLA-DMB', 'HLA-DO',
              'HLA-DOA', 'HLA-DOB', 'HLA-DP', 'HLA-DPA1',
              'HLA-DPB1', 'HLA-DQ', 'HLA-DQA1', 'HLA-DQA2',

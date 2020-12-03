@@ -128,14 +128,36 @@ class RNAseq_Sample:
 
 class Cell_information:
     def __init__(self):
-        self.cell_type_list = []
-        # names of cell-types which the cell assigned to those cell-types but there was a conflict with negative markers
-        self.conflict_related_cell_types = []
-        # True - if the cell could have been classified if there hadn't been cell-types with negative marker conflicts.
-        self.could_have_been_classified = False
-        # True after discovery the cell is in apoptosis stage.
-        self.is_apoptosis = False
+        """
+        conflict_related_cell_types - names of cell-types which the cell was assigned to those cell-types but there was
+        a conflict with negative markers. Therefore can't be that there is a cell-type in conflict_related_cell_types
+        that also appears in cell_type_list and vise-versa. But, it's possible and actually this is the case many
+        times, that cell that has cell-type in conflict_related_cell_types also assigned to be cancer. and it's
+        not defined as cancer_immune_conflict if there is not cell-type in cell_type_list.
 
+        is_apoptosis - defined in separated process after assigning cell to cell-types (cancer and immune), therefore
+        can be any other case too. For instance - can contain cell-type in cell_type_list and also be apoptosis.
+        Note, you have to run remove_apoptosis_cells.py first in order to see a value in that property.
+
+        is_cancer - Only if there was an immune classification (that wasn't removed due to neg-pos conflict) and also
+        cancer classification right after.
+
+        could_have_been_classified - classified as immune-cell at the beginning and then the classification removed
+        due to a pos-neg conflict and the final result is that there is no a final immune-classification.
+        Important note - it's indeed possible that that value would be True (there's no immune classification) but
+        also there WOULD BE A CANCER classification and is_cancer would be True.
+
+        is_classified - TRUE if there is an final immune classification (not related to cancer classification).
+        Important note - it's indeed possible that that value would be False (there's no immune classification) but
+        also there WOULD BE A CANCER classification and is_cancer would be True.
+        """
+
+        self.cell_type_list = []
+        self.conflict_related_cell_types = []
+        # True - if the cell could have been classified as immune if there hadn't been cell-types
+        # with negative marker conflicts.
+        self.could_have_been_classified = False
+        self.is_apoptosis = False
         self.is_classified = False
         self.is_cancer = False
         self.cancer_immune_conflict = False

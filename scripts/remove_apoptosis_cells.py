@@ -31,11 +31,11 @@ import pandas as pd
 from DL.data_loading import extract_droplet_data_from_pickle
 from os.path import join
 
-SAMPLES_PATH = fr'D:\Technion\output files\runs\1.12.20'
-OUTPUT_PATH = fr'D:\Technion\output files\runs\apoptosis\1.12.20'
-CLUSTER_FOLDER_PATH = r'D:\Technion\DATA\Melanoma\clusters'
-APOPTOSIS_CLUSTERS_PATH = r'D:\Technion\DATA\apoptosis_remove_using_clusters.xlsx'
-SUMMARY_PATH = r'D:\Technion\output files\runs\1.12.20\summary.csv'  # None - if you're not interested in saving a new updated summary.
+SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\classifying_cell_types\3.12.20'
+OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\apoptosis\3.12.20'
+CLUSTER_FOLDER_PATH = r'D:\Technion studies\Keren Laboratory\Data\Melanoma\clusters'
+APOPTOSIS_CLUSTERS_PATH = r'D:\Technion studies\Keren Laboratory\Data\tables\apoptosis_remove_using_clusters.xlsx'
+SUMMARY_PATH = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\classifying_cell_types\3.12.20\summary.csv'  # None - if you're not interested in saving a new updated summary.
 MIN_CLUSTER_THRESHOLD = 0.15
 NORMAL_SAMPLES_THRESHOLD = 0.2
 
@@ -160,7 +160,6 @@ def add_apoptosis_summary():
     """
     existing_summary_df = pd.read_csv(SUMMARY_PATH)
     existing_summary_df['number of apoptosis cells'] = np.zeros(len(existing_summary_df)).astype(np.int)
-    all_samples = os.listdir(OUTPUT_PATH)
     updated_apoptosis_df = pd.DataFrame(columns=['sample name',
                                                  'number of cells',
                                                  'percentage of cells classified cancer or immune',
@@ -172,6 +171,7 @@ def add_apoptosis_summary():
                                                  'cancer_immune_conflict'])
     for row_index, row in existing_summary_df.iterrows():
         sample_id = row['sample name']
+        # Extract samples from OUTPUT path because that's the path of the UPDATED samples (with the apoptosis)
         rna_sample = extract_sample(sample_id, OUTPUT_PATH)
         number_of_cells = rna_sample.number_of_cells
 
@@ -209,9 +209,9 @@ def add_apoptosis_summary():
 
 
 if __name__ == '__main__':
-    # if not os.path.isdir(OUTPUT_PATH):
-    #     os.mkdir(OUTPUT_PATH)
-    # determine_apoptosis_in_special_samples()
-    # determine_apoptosis_in_normal_sample()
+    if not os.path.isdir(OUTPUT_PATH):
+        os.mkdir(OUTPUT_PATH)
+    determine_apoptosis_in_special_samples()
+    determine_apoptosis_in_normal_sample()
     if SUMMARY_PATH:
         add_apoptosis_summary()
