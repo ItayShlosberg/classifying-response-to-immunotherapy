@@ -1,3 +1,8 @@
+"""
+That script helped to explore at the first time the smart-seq data of 2018.
+We used it to cluster, visualize and reproduce steps from the article.
+"""
+
 from sklearn.metrics import roc_auc_score
 from utilities.smart_seq_dataset import *
 import numpy as np

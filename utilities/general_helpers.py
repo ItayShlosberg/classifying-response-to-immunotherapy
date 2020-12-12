@@ -129,3 +129,8 @@ def visualization_confusion_matrix(labels, predictions, title=None, save_path=No
     plt.show()
 
     return cm
+
+
+def create_folder(folder):
+    if not os.path.isdir(folder):
+        os.mkdir(folder)

@@ -6,7 +6,22 @@ import numpy as np
 ROOT_PATH = r'..\Data\rna_seq200k\all_samples'
 
 """
-Finds in each samples gene names which appear multiple times.
+During the beginning of work with Droplet dataset I've noticed to several things:
+1. different samples have different length (number of genes)
+2. when I tried to align those sample according gene order I found that there are samples with duplication in gene name.
+   That is, there are genes that appear more then once in the same sample, each cell has multiple appearance of 
+   those genes. Trying to figure it out, I still should align those genes which the corresponding gene of other samples.
+3. built this script to make a list of all the duplications over all samples.
+
+The script finds in each sample gene names which appear multiple times.
+
+
+Corresponding conclusion:
+Multiple instances of genes - cells might contain more than one instance of some gene. 
+it’s not a mistake in the sequencing process, it's two different paralogues (genes that used to be one gene 
+but now they are two or more). 
+therefore it's worth keeping them separate, as they may represent two different entities. 
+Thus,  the comparison of gene expression between different cells will be done by ens-id and not by gene name
 """
 
 

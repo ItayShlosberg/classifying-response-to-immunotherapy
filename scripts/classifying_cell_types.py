@@ -35,10 +35,9 @@ from os.path import join
 MARKERS_PATH = r'D:\Technion studies\Keren Laboratory\Data\tables\ImmuneCellsMarkersUpdated_12.11.20.xlsx'
 CANCER_MARKERS = {'tumor':  ['MLANA', 'PMEL', 'TYR', 'MITF', 'AXL']}
 LYMPHOID = ['T cells', 'CD4 helper T cells', 'CD8 Cytotoxic T cells', 'Regulatory T cells', 'Regulatory CD4 T cells', 'Regulatory CD8 T cells', 'Regulatory CD4_CD8 T cells', 'NKT cells', 'NK cells', 'B cells', 'Activated T cells', 'Senescence T cells', 'Terminal effector', 'Exhausted T cells', 'Stem_like T cells', 'Memory T cells', 'Memory CD4 T cells', 'Memory CD8 T cells', 'Memory CD4_CD8 T cells']
-MYELOID = [['Macrophage_immature', 'Macrophage_mature', 'Monocyte_immature', 'Monocyte_mature', 'cDCs_dendritic_cells', 'pDCs', 'myeloid cells_general_immature', 'myeloid cells_general_mature', 'Neutrophils', 'Granolocytes',]]
-SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\Data\droplet_seq\all_samples'
-PKL_NAME = r'RNA_sample.pkl'
-OUT_FOLDER = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\classifying_cell_types\3.12.20'
+MYELOID = ['Macrophage_immature', 'Macrophage_mature', 'Monocyte_immature', 'Monocyte_mature', 'cDCs_dendritic_cells', 'pDCs', 'myeloid cells_general_immature', 'myeloid cells_general_mature', 'Neutrophils', 'Granolocytes']
+SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\Data\droplet_seq\all_samples_10.12.20'
+OUT_FOLDER = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\classifying_cell_types\10.12.20'
 MHC2_GENES = ['HLA-DM', 'HLA-DMA', 'HLA-DMB', 'HLA-DO',
              'HLA-DOA', 'HLA-DOB', 'HLA-DP', 'HLA-DPA1',
              'HLA-DPB1', 'HLA-DQ', 'HLA-DQA1', 'HLA-DQA2',
@@ -297,7 +296,7 @@ def extract_sample(sample_id):
     :param sample_id: id of rna sample (Mi)
     :return: rna_sample
     """
-    sample_path = join(SAMPLES_PATH, sample_id, PKL_NAME)
+    sample_path = join(SAMPLES_PATH, sample_id, f"{sample_id}.pkl")
     rna_sample = extract_droplet_data_from_pickle(sample_path)
     print(f'sample id {sample_id}')
     print(f'count shape {rna_sample.counts.shape}')
@@ -376,12 +375,12 @@ def save_classification_summary_sample(sample_id,
     pickle.dump(pos_neg_conflict_indicators, open(join(folder, 'pos_neg_conflicts.pkl'), "wb"))
     pickle.dump(cancers_conflict_indicators, open(join(folder, 'cancers_conflicts.pkl'), "wb"))
 
-    conflict_df = pd.DataFrame([[x] + [';'.join(y)] for x, y in list(pos_neg_conflict_list.items())],
-                               columns=['cell idx', 'problematic cell-types'])
+    # conflict_df = pd.DataFrame([[x] + [';'.join(y)] for x, y in list(pos_neg_conflict_list.items())],
+    #                            columns=['cell idx', 'problematic cell-types'])
 
     # mapping_table_df = pd.DataFrame([[key, ';'.join(val)] for key, val in cell_mapping_table.items()],
     #                                 columns=['cell index', 'values'])
-    conflict_df.to_csv(join(folder, 'cells_with_neg_pos_conflict.csv'))
+    # conflict_df.to_csv(join(folder, 'cells_with_neg_pos_conflict.csv'))
 
     # save also the updated rna object that now contains all the classification information.
     pickle.dump(rna_sample, open(join(folder, f'{sample_id}.pkl'), 'wb'))
@@ -392,30 +391,29 @@ def update_rna_sample_cells_findings(rna_sample,
                                      cell_types_removed,
                                      cancer_cell_mapping_table,
                                      cancers_conflicts):
-    cells_information = [Cell_information() for _ in range(rna_sample.number_of_cells)]
 
-    # update cells' cell-type list
+    # update cells' cell-type list, is_immune, is_LYMPHOID ans  is_MYELOID
     for k, v in cells_mapping_table.items():
-        cells_information[k].cell_type_list = v
+        rna_sample.cells_information[k].cell_type_list = list(set(v))
         if len(v):
-            cells_information[k].is_classified = True
+            rna_sample.cells_information[k].is_immune = True
+        if is_there_overlap_in_lists(v, LYMPHOID):
+            rna_sample.cells_information[k].is_lymphoid = True
+        if is_there_overlap_in_lists(v, MYELOID):
+            rna_sample.cells_information[k].is_myeloid = True
 
-    # update cell-types related conflict, cell with conflict and without classification
-    # means it could have been classified if that conflict hadn't happened.
+
+    # update cell-types related conflict
     for k, v in cell_types_removed.items():
-        cells_information[k].conflict_related_cell_types = v
-        if not cells_information[k].is_classified:
-            cells_information[k].could_have_been_classified = True
+        rna_sample.cells_information[k].conflict_related_cell_types = v
 
     for k, v in cancer_cell_mapping_table.items():
         if 'tumor' in v:
-            cells_information[k].is_cancer = True
+            rna_sample.cells_information[k].is_cancer = True
 
     for idx in np.where(cancers_conflicts)[0]:
-        cells_information[idx].cancer_immune_conflict = True
+        rna_sample.cells_information[idx].cancer_immune_conflict = True
 
-    rna_sample.cells_information = cells_information
-    return cells_information
 
 
 def summary_over_all_samples():
@@ -424,20 +422,18 @@ def summary_over_all_samples():
     :return: Summary.
     """
     summary_df = pd.DataFrame(columns=['sample name',
-                                       'number of cells',
-                                       'total classified cells',
-                                       'number of cells classified as immune',
-                                       'number of cells classified as cancer',
-                                       'number of pos-neg markers conflicts',
-                                       'number of cancer-immune conflicts',
-                                       'number of pos-neg conflicts without an immune label (many of them are cancer)'])
+                                       'n_cells',
+                                       'p_immune_cells',
+                                       'n_immune_cells',
+                                       'n_cancer_cells',
+                                       'n_pos_neg_markers_conflicts',
+                                       'n_cancer_immune_conflicts'])
     samples = [subfolder for subfolder in os.listdir(SAMPLES_PATH)]
 
     # Extract ImmuneCellsMarkersUpdated Excel file from PC and load it into DataFrame.
     xls = pd.ExcelFile(MARKERS_PATH)
     positive_markers_df = pd.read_excel(xls, 'and_or')
     negative_markers_df = pd.read_excel(xls, 'none')
-    all_samples_cells_information = {}
     if not os.path.isdir(OUT_FOLDER):
         os.mkdir(OUT_FOLDER)
     for sample in samples:
@@ -454,24 +450,18 @@ def summary_over_all_samples():
         number_of_cells = result['number_of_cells']
         cell_types_removed = result['cell_types_removed']
 
-
-
         # Update RNA sample object: cells meta-data for each cells its findings
-        all_samples_cells_information[sample] = update_rna_sample_cells_findings(rna_sample,
-                                                                                 cells_mapping_table,
-                                                                                 cell_types_removed,
-                                                                                 cancer_cell_mapping_table,
-                                                                                 cancers_conflicts)
+        update_rna_sample_cells_findings(rna_sample,
+                                         cells_mapping_table,
+                                         cell_types_removed,
+                                         cancer_cell_mapping_table,
+                                         cancers_conflicts)
 
         # Extract summary of classification.
         number_of_cells_classified_immune = get_length_of_mapping_table(cells_mapping_table)
         number_of_cells_classified_cancer = get_length_of_mapping_table(cancer_cell_mapping_table)
         number_of_posneg_markers_conflicts = len(cell_types_removed)
         number_of_cancer_immune_conflicts = np.sum(cancers_conflicts)
-        # Could have been classified if there was not a conflict.
-        number_of_cells_could_have_been_classified = sum(
-            [c.could_have_been_classified for c in all_samples_cells_information[sample]])
-
 
         # Append to DF
         summary_df = summary_df.append(pd.DataFrame([[sample,
@@ -480,8 +470,7 @@ def summary_over_all_samples():
                                                       number_of_cells_classified_immune,
                                                       number_of_cells_classified_cancer,
                                                       number_of_posneg_markers_conflicts,
-                                                      number_of_cancer_immune_conflicts,
-                                                      number_of_cells_could_have_been_classified]],
+                                                      number_of_cancer_immune_conflicts]],
                                        columns=summary_df.columns))
 
         # Save sample result
@@ -494,32 +483,13 @@ def summary_over_all_samples():
                                            pos_neg_conflict_list,
                                            rna_sample)
 
-    summary_conflict_related_cell_types(all_samples_cells_information).to_csv(join(OUT_FOLDER, 'conflict_related_cell_types_df.csv'))
-    summary_df.to_csv(join(OUT_FOLDER, 'summary.csv'))
+    summary_df.to_csv(join(OUT_FOLDER, 'summary.csv'), index=False)
     return summary_df
-
-
-def summary_conflict_related_cell_types(all_samples_cells_information):
-    """
-    Build a table of all conflict related cell types of cells that don't have any class after conflict removed.
-    :param all_samples_cells_information: list of Cell_information python object.
-    :return: conflict_related_cell_types_df
-    """
-    conflict_related_cell_types_df = pd.DataFrame(columns=['sample name',
-                                       'cell index',
-                                       'cell-types removed'])
-    for sample_id, cells_information in all_samples_cells_information.items():
-        for cell_index, cell_inf in enumerate(cells_information):
-            if cell_inf.could_have_been_classified:
-                conflict_related_cell_types_df = conflict_related_cell_types_df.append(pd.DataFrame([[sample_id,
-                                                                                                      cell_index,
-                                                                                                      ';'.join(cell_inf.conflict_related_cell_types)]],
-                                                                                                    columns=[
-                                                                                                        'sample name',
-                                                                                                        'cell index',
-                                                                                                        'cell-types removed']))
-    return conflict_related_cell_types_df
 
 
 if __name__ == '__main__':
      summary_df = summary_over_all_samples()
+
+
+
+

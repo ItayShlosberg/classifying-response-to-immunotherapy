@@ -1,3 +1,7 @@
+"""
+Python structures for smart-seq data of 2018
+"""
+
 from utilities.smart_seq_dataset import *
 import numpy as np
 import random
