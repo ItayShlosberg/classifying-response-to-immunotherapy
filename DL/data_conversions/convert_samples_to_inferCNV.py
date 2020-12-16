@@ -1,3 +1,8 @@
+"""
+Use that script to create input to InferCNV.
+You should define the input path of the samples in PKL format.
+"""
+
 import sklearn
 from utilities.droplet_dataset import *
 from utilities import *
@@ -18,7 +23,6 @@ from os.path import join
 
 OUTPUT_DIR = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\converted_data'
 INPUT_DIR = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\scrublet\5.12.20'
-GENOME_PATH = r'D:\Technion studies\Keren Laboratory\Data\inferCNV_data\gencode_v19_gene_pos.txt'
 
 
 def convert_matrix(rna_sample, sample_id):
@@ -82,7 +86,4 @@ def convert_all_samples():
 if __name__ == '__main__':
 
     convert_all_samples()
-    # with open(GENOME_PATH, 'rb') as f:
-    #     genome = f.readlines()
-    #     genome = [str(gene).split('\\t')[0][2:] for gene in genome]
-    _breakpoint = 0
+

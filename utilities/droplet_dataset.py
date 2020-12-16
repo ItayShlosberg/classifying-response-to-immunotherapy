@@ -205,5 +205,6 @@ class Cell_information:
         self.is_doublet = False
         self.is_lymphoid = False
         self.is_myeloid = False
+        self.is_CelBender_empty = False
 
 

@@ -10,7 +10,7 @@ import scrublet as scr
 from DL.data_loading import extract_data_from_pickle as ex
 import pickle
 from DL.data_creation import *
-from DL.matlab_env.txt_to_python_structures import *
+from DL.data_conversions.txt_to_python_structures import *
 
 
 path = r'C:\Users\itay\Desktop\Technion studies\Keren Laboratory\python_playground\classifying-response-to-immunotherapy\Data\rna_seq200k\matlab_structures_4.11.20'

@@ -7,7 +7,7 @@ import matplotlib
 import scrublet as scr
 import pickle
 from DL.data_creation import *
-from DL.matlab_env.txt_to_python_structures import *
+from DL.data_conversions.txt_to_python_structures import *
 from os.path import join
 
 
