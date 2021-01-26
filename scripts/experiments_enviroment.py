@@ -1,14 +1,22 @@
+import sys
+sys.path.append(r'/srv01/technion/shitay/Code/classifying_response_to_immunotherapy/')
+sys.path.append(r'/srv01/technion/shitay/Code/classifying_response_to_immunotherapy/cfg')
+sys.path.append(r'/srv01/technion/shitay/Code/classifying_response_to_immunotherapy/Models')
 from os.path import join
+
+print("\n\n\n\n########## EXPERIMENT HAS STARTED ##########\n\n\n")
 from Models.enhanced_xgboost import Enhanced_XGboost
-from DL.data_loading import *
+from DL.Mars_seq_DL.data_loading import *
 from utilities.smart_seq_dataset import *
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_auc_score, accuracy_score
-from sklearn import metrics
+from sklearn.metrics import accuracy_score
 from utilities.general_helpers import *
 
-CONFIG_PATH = r'cfg\dummy.yaml'
+
+# CONFIG_PATH = r'/srv01/technion/shitay/Code/classifying_response_to_immunotherapy/cfg/server_cfg.yaml'
+# CONFIG_PATH = r'cfg/server_cfg.yaml'
 # CONFIG_PATH = r'cfg\factory_cfg\variance_2_test_percent0.30000000000000004_patients_post_cfg.yaml'
-# CONFIG_PATH = r'cfg\xgboost_1_cfg.yaml'
+CONFIG_PATH = r'cfg\xgboost_1_cfg.yaml'
+CONFIG_PATH = r'..\cfg\dummy.yaml'
 # CONFIG_PATH = sys.argv[1] if len(sys.argv)>1 else r'cfg\xgboost_1_cfg.yaml' # for terminal with outer config operation
 
 EXPERIMENT_NAME, EXPERIMENTS_FOLDER, config = load_yml(CONFIG_PATH)
@@ -66,7 +74,6 @@ def main(dataset_config, xgboost_config, experiment_config):
 
     # Builds datasets
     train_dataset, test_dataset = build_datasets(dataset_config)
-    a = train_dataset+ test_dataset
     print(f'Train dataset patients: {train_dataset.get_all_patients_names()}')
     print(f'Test dataset patients: {train_dataset.get_all_patients_names()}')
 
@@ -120,4 +127,3 @@ if __name__ == '__main__':
     experiment_config = config['EXPERIMENT']
 
     main(dataset_config, xgboost_config, experiment_config)
-

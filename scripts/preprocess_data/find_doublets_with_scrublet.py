@@ -3,29 +3,20 @@ check for doublets over all samples using Scrublet.
 Save a summary and  updated PKLs with is_doublet information for each cell.
 """
 
-from matplotlib import pyplot
-import numpy as np
-import scipy
-import pickle
-import matplotlib
 import scrublet as scr
 import pickle
-from DL.data_creation import *
-from DL.data_conversions.txt_to_python_structures import *
-from os.path import join
-from utilities.droplet_dataset import *
-from utilities import *
-import numpy as np
-import pickle
-import pickle
 import pandas as pd
-from DL.data_loading import extract_droplet_data_from_pickle
+from DL.Mars_seq_DL.data_loading import extract_droplet_data_from_pickle
 from os.path import join
 from utilities.general_helpers import *
+from termcolor import colored
 
+SAMPLES = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\apoptosis\16.12.20_empty_removed'
+OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\scrublet\16.12.20_empty_removed'
 
-SAMPLES = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\apoptosis\10.12.20'
-OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\scrublet\10.12.20'
+# Union summaries - None if you don't want to combine with older summary,
+# otherwise specify the previous summary
+UNION_SUMMARY_PATH = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\apoptosis\16.12.20_empty_removed\apoptosis_summary.csv'
 
 
 def extract_sample(sample_id):
@@ -36,7 +27,7 @@ def extract_sample(sample_id):
     """
     data_path = join(SAMPLES, sample_id, f'{sample_id}.pkl')
     rna_sample = extract_droplet_data_from_pickle(data_path)
-    print(f'sample id {sample_id}')
+    print(colored(f'sample id {sample_id}', 'blue'))
     print(f'count shape {rna_sample.counts.shape}')
     print(f'number of cells {rna_sample.number_of_cells}')
     print(f'number of genes {rna_sample.number_of_genes}')
@@ -50,16 +41,21 @@ def run_scrub_over_all_samples():
     Additionally, save a summary Excel conclusion (DF) of all sample.
     """
     summary_df = pd.DataFrame(columns=['sample name',
-                                       'number of cells',
-                                       'number of scrub doublets',
+                                       'n_cells',
+                                       'n_scrub_doublets',
                                        'p_doublets'])
     samples = [subfolder for subfolder in os.listdir(SAMPLES)]
     create_folder(OUTPUT_PATH)
     for sample in [s for s in samples if not 'csv' in s]:
         # Extracts one of the samples from PC
         rna_sample = extract_sample(sample)
-        scrub = scr.Scrublet(rna_sample.counts)
-        doublet_scores, predicted_doublets = scrub.scrub_doublets()
+        try:
+            scrub = scr.Scrublet(rna_sample.counts)
+            doublet_scores, predicted_doublets = scrub.scrub_doublets()
+        except Exception as ex:
+            print(colored(f"Exception has occurred in scrub.scrub_doublets: {ex}. \nTrying with 20 components", 'red'))
+            scrub = scr.Scrublet(rna_sample.counts)
+            doublet_scores, predicted_doublets = scrub.scrub_doublets(n_prin_comps=18)
         print(f'num of doublets {sum(predicted_doublets)}')
         print(f'percentage of doublets {sum(predicted_doublets)/rna_sample.number_of_cells}')
         rna_sample.cells_information.setattr('is_doublet', np.arange((rna_sample.number_of_cells)), False)
@@ -75,9 +71,18 @@ def run_scrub_over_all_samples():
 
         create_folder(join(OUTPUT_PATH, sample))
         pickle.dump((rna_sample), open(join(OUTPUT_PATH, sample, f'{sample}.pkl'), 'wb'))
-    summary_df.to_excel(join(OUTPUT_PATH, r'scrublet_summary.xlsx'), index=False)
+    return summary_df
+
+
+
+def union_summaries(summary_df):
+    existing_summary_df = pd.read_csv(UNION_SUMMARY_PATH)
+    merged_summary = pd.merge(existing_summary_df, summary_df)
+    return merged_summary
 
 
 if __name__ == '__main__':
-    run_scrub_over_all_samples()
-
+    summary_df = run_scrub_over_all_samples()
+    if UNION_SUMMARY_PATH:
+        summary_df = union_summaries(summary_df)
+    summary_df.to_excel(join(OUTPUT_PATH, r'scrublet_summary.xlsx'), index=False)

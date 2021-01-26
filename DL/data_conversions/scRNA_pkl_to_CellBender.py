@@ -3,23 +3,10 @@ Use that script to create input to CellBender.
 You should define the input path of the samples in PKL format.
 """
 
-import sklearn
 from utilities.droplet_dataset import *
-from utilities import *
-from matplotlib import pyplot
 import numpy as np
-import scipy
-import pickle
-import matplotlib.pyplot as plt
-import pickle
-import random
-from scipy.stats import pearsonr
-from matplotlib.pyplot import figure
-import pandas as pd
-import os.path as path
-from DL.data_loading import extract_droplet_data_from_pickle
+from DL.Mars_seq_DL.data_loading import extract_droplet_data_from_pickle
 from os.path import join
-from scipy.io import mmwrite
 
 OUTPUT_DIR = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\CellBender\dummy'
 INPUT_DIR = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\scrublet\10.12.20'

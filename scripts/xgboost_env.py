@@ -1,8 +1,7 @@
-from DL.data_loading import *
+from DL.Mars_seq_DL.data_loading import *
 import xgboost as xgb
 from utilities.smart_seq_dataset import *
-import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_auc_score
+from sklearn.metrics import roc_auc_score
 from sklearn import metrics
 from utilities.general_helpers import *
 import pickle
@@ -183,3 +182,5 @@ if __name__ == '__main__':
     early_stopping_rounds = config['XGBOOST']['early_stopping_rounds']
     k_folds = config['XGBOOST']['k_folds']
     main(test_percent, patients, num_round, early_stopping_rounds, k_folds, variance)
+
+

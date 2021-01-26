@@ -1,7 +1,7 @@
 import pandas
 import operator
 import math
-from DL.supervised_classification import *
+from DL.data_conversions.supervised_classification import *
 
 CD45_CELLS_INFORMATION_PATH = r'..\Data\source data\GSE120575_patient_ID_single_cells.txt'
 GENERAL_11_CELL_CLUSTERS_PATH = r'C:\Users\itay\Desktop\Technion studies\Keren Laboratory\research\articles\Tables and files article5\Table S1 - A Summary of Data Related to All Single-Cells Analysis, Related to Figure 1.xlsx'

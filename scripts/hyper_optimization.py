@@ -2,10 +2,8 @@ from hyperopt import hp
 from hyperopt import fmin, tpe, space_eval, Trials
 from sklearn.metrics import accuracy_score
 from Models.enhanced_xgboost import Enhanced_XGboost
-from DL.data_loading import *
+from DL.Mars_seq_DL.data_loading import *
 from utilities.smart_seq_dataset import *
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_auc_score
-from sklearn import metrics
 from utilities.general_helpers import *
 
 

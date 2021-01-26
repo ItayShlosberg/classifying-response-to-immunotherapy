@@ -206,5 +206,15 @@ class Cell_information:
         self.is_lymphoid = False
         self.is_myeloid = False
         self.is_CelBender_empty = False
+        self.is_stormal = False
+        self.inferCNV = None
+        self.count_insertions = 0
+        self.count_deletions = 0
+
+
+
+
+
+
 
 

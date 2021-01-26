@@ -15,26 +15,16 @@ cancers_conflicts.pkl - indicators array for all cells, which cells had a confli
 cells_with_neg_pos_conflict.csv - table mapping between cells with a negative markers conflict and the this list of negative markers.
 """
 
-import sklearn
 from utilities.droplet_dataset import *
-from utilities import *
-from matplotlib import pyplot
 import numpy as np
-import scipy
 import pickle
-import matplotlib.pyplot as plt
-import pickle
-import random
-from scipy.stats import pearsonr
-from matplotlib.pyplot import figure
 import pandas as pd
-import os.path as path
-from DL.data_loading import extract_droplet_data_from_pickle
+from DL.Mars_seq_DL.data_loading import extract_droplet_data_from_pickle
 from os.path import join
 
 
-SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\CellBender\PARAMETERIZED_RUN_RNASEQ\empty_kept'
-OUT_FOLDER = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\classifying_cell_types\16.12.20_empty_kept'
+SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\CellBender\PARAMETERIZED_RUN_RNASEQ\empty_removed'
+OUT_FOLDER = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\classifying_cell_types\16.12.20_empty_removed'
 MARKERS_PATH = r'D:\Technion studies\Keren Laboratory\Data\tables\ImmuneCellsMarkersUpdated_12.11.20.xlsx'
 
 

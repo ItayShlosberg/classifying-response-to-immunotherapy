@@ -55,7 +55,7 @@ def constructing_scRNAseq_Dataset_keep_empty():
     for sample_id in samples:
         print(colored(sample_id, 'blue'))
         create_folder(join(KEEP_EMPTY_OUTPUT_PATH, sample_id))
-        cb_path = join(CELLBENDER_OUTPUT_PATH, sample_id, 'out_filtered.h5')
+        cb_path = join(CELLBENDER_OUTPUT_PATH, sample_id, 'out.h5')
         sample_path = join(RAW_SAMPLES_OUTPUTS, sample_id, f'{sample_id}.pkl')
         rna_sample = pickle.load(open(sample_path, 'rb'))
 
@@ -69,16 +69,20 @@ def constructing_scRNAseq_Dataset_keep_empty():
 
         # Retrieving samples and CellBender output.
         number_of_droplets = rna_sample.number_of_cells
-        filterd_cb = sc.read_10x_h5(cb_path, genome='background_removed')
+        cb_object = sc.read_10x_h5(cb_path, genome='background_removed')
 
         # Creating rna copy with background removal changes
-        cb_counts = filterd_cb.to_df().values
-        cb_barcodes = list(filterd_cb.to_df().index)
-        rna_sample.counts[[rna_sample.barcodes.index(b) for b in cb_barcodes], :] = cb_counts
-        CB_rna_sample = copy_rna_object(rna_sample)
+        cb_counts = cb_object.to_df().values
+        cb_barcodes = list(cb_object.to_df().index)
+        if cb_counts.shape != rna_sample.counts.shape:
+            raise Exception()
+        # rna_sample.counts[[rna_sample.barcodes.index(b) for b in cb_barcodes], :] = cb_counts
+        CB_rna_sample = RNAseq_Sample(cb_counts, rna_sample.gene_names, cb_barcodes, rna_sample.features)
 
         # Marking empty droplets.
-        empty_droplets_idxs = [idx for idx, _b in enumerate(rna_sample.barcodes) if not _b in cb_barcodes]
+        filtered_barcodes_df = pd.read_csv(join(CELLBENDER_OUTPUT_PATH, sample_id, 'out_cell_barcodes.csv'))
+        filtered_barcodes = [ii[0] for ii in filtered_barcodes_df.values.tolist()]
+        empty_droplets_idxs = [idx for idx, _b in enumerate(cb_barcodes) if not _b in filtered_barcodes]
         for empty_droplet_idx in empty_droplets_idxs:
             CB_rna_sample.cells_information[empty_droplet_idx].is_CelBender_empty = True
 

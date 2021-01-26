@@ -3,26 +3,13 @@ Use that script to create input to InferCNV.
 You should define the input path of the samples in PKL format.
 """
 
-import sklearn
 from utilities.droplet_dataset import *
-from utilities import *
-from matplotlib import pyplot
-import numpy as np
-import scipy
-import pickle
-import matplotlib.pyplot as plt
-import pickle
-import random
-from scipy.stats import pearsonr
-from matplotlib.pyplot import figure
-import pandas as pd
-import os.path as path
-from DL.data_loading import extract_droplet_data_from_pickle
+from DL.Mars_seq_DL.data_loading import extract_droplet_data_from_pickle
 from os.path import join
 
 
-OUTPUT_DIR = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\converted_data'
-INPUT_DIR = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\scrublet\5.12.20'
+OUTPUT_DIR = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\converted_data_31.12.20'
+INPUT_DIR = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\scrublet\10.12.20'
 
 
 def convert_matrix(rna_sample, sample_id):
@@ -38,7 +25,7 @@ def convert_matrix(rna_sample, sample_id):
             if gene_duplications[gene_name]:
                 continue
             gene_duplications[gene_name] = True
-            print(f'{idx}/{len(rna_sample.gene_names)}')
+            # print(f'{idx}/{len(rna_sample.gene_names)}')
             values = '\t'.join(rna_sample.counts[:, idx].astype(str).tolist())
             line = gene_name+'\t'+values + '\n'
             writer.write(str.encode(line))

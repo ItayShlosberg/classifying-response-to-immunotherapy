@@ -1,15 +1,5 @@
 from os import listdir
 from os.path import isfile, join
-import os
-from matplotlib import pyplot
-import numpy as np
-import scipy
-import pickle
-import matplotlib
-import scrublet as scr
-from DL.data_loading import extract_data_from_pickle as ex
-import pickle
-from DL.data_creation import *
 from DL.data_conversions.txt_to_python_structures import *
 
 

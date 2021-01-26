@@ -23,19 +23,24 @@ Apoptosis cells as cells with mitochondria content > 0.2.
 """
 
 from utilities.droplet_dataset import *
-from utilities import *
 import numpy as np
 import pickle
-import pickle
 import pandas as pd
-from DL.data_loading import extract_droplet_data_from_pickle
+from DL.Mars_seq_DL.data_loading import extract_droplet_data_from_pickle
 from os.path import join
+from termcolor import colored
 
-SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\classifying_cell_types\10.12.20'
-OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\apoptosis\10.12.20'
+SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\classifying_cell_types\16.12.20_empty_removed'
+OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\apoptosis\16.12.20_empty_removed'
+
+# Use 10X clusters
 CLUSTER_FOLDER_PATH = r'D:\Technion studies\Keren Laboratory\Data\Melanoma\clusters'
+# Use APOPTOSIS_CLUSTERS table to see which samples should be treated with clustering
 APOPTOSIS_CLUSTERS_PATH = r'D:\Technion studies\Keren Laboratory\Data\tables\apoptosis_remove_using_clusters.xlsx'
-SUMMARY_PATH = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\classifying_cell_types\10.12.20\summary.csv'  # None - if you're not interested in saving a new updated summary.
+
+# Use the classifying cell-types script for apoptosis summary
+# None - if you're not interested in saving a new updated summary.
+SUMMARY_PATH = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\classifying_cell_types\10.12.20\summary.csv'
 MIN_CLUSTER_THRESHOLD = 0.15
 NORMAL_SAMPLES_THRESHOLD = 0.2
 
@@ -55,13 +60,30 @@ def extract_sample(sample_id, samples_path=SAMPLES_PATH):
     return rna_sample
 
 
-def extract_apoptosis_cluster_indexes(sample_id, intersting_cluster):
-    # Clusters extraction
+def extract_apoptosis_cluster_indexes(sample_id, intersting_cluster, rna_sample):
+    """
+    1. Extract 10X cluster mapping table from PC, each cell mapped into its corresponding cluster.
+    2. Align RNA sample barcodes to clustering table barcodes.
+    3. Check which cells belong to interesting cluster (apoptosis-wise cluster).
+    :param sample_id:
+    :param intersting_cluster:
+    :param rna_sample:
+    :return: mapping (boolean list) each cell (in RNAseq sample cells order) belongs to interesting cluster.
+    """
 
+    # Extract 10X cluster mapping table from PC, each cell mapped into its corresponding cluster.
     cluster_table_path = join(CLUSTER_FOLDER_PATH, f'Graph_based_{sample_id}.csv')
     cluster_df = pd.read_csv(cluster_table_path)
 
-    cluster_indexes = np.array([int(s.split(' ')[1]) for s in list(cluster_df['Graph-based'])])
+    # Align RNA sample barcodes to clustering table barcodes.
+    clusters_barcodes = cluster_df["Barcode"].tolist()
+    rna_sample_alignment_idx_to_clusters = [clusters_barcodes.index(_b) for _b in rna_sample.barcodes]
+    cluster_indexes = cluster_df['Graph-based'].to_numpy()[rna_sample_alignment_idx_to_clusters]
+
+    # Convert clustering values to int.
+    cluster_df['Graph-based'] = [int(s.split(' ')[1]) for s in cluster_df['Graph-based']]
+
+    # Check which cells belong to interesting cluster (apoptosis-wise cluster).
     cluster_indexes = np.isin(cluster_indexes, intersting_cluster)
     return cluster_indexes
 
@@ -73,6 +95,7 @@ def determine_apoptosis_in_normal_sample():
     we take all samples that aren't shown in CLUSTER.xlsx file. says they are normal.
     we will save the pkl result for each of the updated samples.
     """
+    print(colored('apoptosis_in_normal_samples', 'yellow'))
     apoptosis_clustes_df = pd.read_excel(pd.ExcelFile(APOPTOSIS_CLUSTERS_PATH))
 
     all_samples = os.listdir(SAMPLES_PATH)
@@ -112,6 +135,7 @@ def determine_apoptosis_in_special_samples():
     At the end of the process the updated samples containing the apoptosis information will be saved.
     :param rna_sample:
     """
+    print(colored('apoptosis_in_special_samples', 'blue'))
     apoptosis_clustes_df = pd.read_excel(pd.ExcelFile(APOPTOSIS_CLUSTERS_PATH))
     apoptosis_clustes_df['clusters'] = apoptosis_clustes_df['clusters'].astype(str)
     for row_idx, row in apoptosis_clustes_df.iterrows():
@@ -120,7 +144,7 @@ def determine_apoptosis_in_special_samples():
         clusters = [int(ii) for ii in row['clusters'].split(';')]
 
         rna_sample = extract_sample(sample_id)
-        cluster_indexes = extract_apoptosis_cluster_indexes(sample_id, clusters)
+        cluster_indexes = extract_apoptosis_cluster_indexes(sample_id, clusters, rna_sample)
 
         # Extract mitochondria content.
         counting_reads = rna_sample.counts.sum(axis=1).astype(np.float64)
@@ -145,7 +169,6 @@ def determine_apoptosis_in_special_samples():
         pickle.dump((rna_sample), open(join(output_folder, f"{sample_id}.pkl"), "wb"))
 
 
-
 def add_apoptosis_summary():
     """
     Add apoptosis summary to existing summary of classifying_cell_types.py script
@@ -153,6 +176,7 @@ def add_apoptosis_summary():
     save a new CSV in OUTPUT path.
     :return:
     """
+    print(colored('apoptosis_summary', 'red'))
     existing_summary_df = pd.read_csv(SUMMARY_PATH)
     existing_summary_df['number of apoptosis cells'] = np.zeros(len(existing_summary_df)).astype(np.int)
     updated_apoptosis_df = pd.DataFrame(columns=['sample name',
