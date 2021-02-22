@@ -57,7 +57,7 @@ class Cohort_RNAseq:
 
 class RNAseq_Sample:
 
-    def __init__(self, counts, gene_names, barcodes, features):
+    def __init__(self, counts, gene_names, barcodes, features, cells_information=None):
         """
         :param counts: 2D-numpy array with rows as genes and columns as cells. The created object'll save the count
         table in a manner which rows are the cells and columns are the genes, for convenience.
@@ -78,10 +78,13 @@ class RNAseq_Sample:
         self.number_of_genes = len(gene_names)
         self.number_of_cells = len(barcodes)
         self.cells_information = Cell_Inf_List(self.number_of_cells)
+        if cells_information:
+            self.cells_information = cells_information
 
     def makeover_genes(self, ens_id_list):
         """
-        TODO: build that function from scratch.
+        TODO: build that function from scratch. for now not relevant. only when we'll run model and wand to be consistent with the order of the genes.
+
         Change the dimension of genes according to the Cohort whole genes. Add zeros in places where there is no
         apparent gene and rearrange the order of the genes.
         :param ens_id_list:
@@ -110,23 +113,68 @@ class RNAseq_Sample:
 
         return all_genes_indexes
 
+    def get_subset_by_barcodes(self, barcode_list):
+        indices = [self.barcodes.index(bb) for bb in barcode_list]
+        return self[indices]
+
+    def filter_cells_by_property(self, prop_name, value):
+        return self[[aa == value for aa in self.cells_information.getattr(prop_name)]]
+
+    def filter_genes_by_variance(self, variance, in_place=True):
+        big_variance_genes = np.var(self.counts, axis=0) > variance
+        filtered_cells = self.counts[:, big_variance_genes]
+        filter_features = [self.features[i] for i in range(len(self.gene_names)) if big_variance_genes[i]]
+        filtered_genes = [self.gene_names[i] for i in range(len(self.gene_names)) if big_variance_genes[i]]
+        if in_place:
+            self.counts = filtered_cells
+            self.gene_names = filtered_genes
+            self.features = filter_features
+            print(f"Dataset was cleared from genes with variance of less than {variance}")
+        return RNAseq_Sample(filtered_cells,
+                             filtered_genes,
+                             self.barcodes,
+                             filter_features,
+                             self.cells_information)
+
     def __getitem__(self, item):
         """
         TODO: currently it's only a pattern to build various index functions. use that pattern to build indexing
         :param item:
         :return:
         """
-        # if isinstance(item, int):
-        #     return self.counts[item], self.cells_information_list[item]
-        # if isinstance(item, slice):
-        #     return RNAseq_Dataset(self.cells[item], self.cells_information_list[item], self.gene_names)
-        # if isinstance(item, list):
-        #     # identify if we are dealing with binary indexes or explicit indexes.
-        #     if sum([(ii == 0 or ii == 1) for ii in item]) == len(item):
-        #         # converts to explicit indexes.s
-        #         item = [i for i in range(len(self)) if item[i]]
-        #     return RNAseq_Dataset(self.cells[item, :], self.cells_information_list[item], self.gene_names)
-        pass
+        if isinstance(item, int):
+            return self.counts[item], self.cells_information_list[item]
+        if isinstance(item, slice):
+            lst_indices = list(
+                range(item.indices(self.number_of_cells + 1)[0], item.indices(self.number_of_cells + 1)[1]))
+            barcodes = [self.barcodes[ii] for ii in lst_indices]
+            cells = self.counts[item, :]
+            cells_information = Cell_Inf_List()
+            cells_information.cells_information_list = self.cells_information[item]
+            cells_information.number_of_cells = len(cells_information.cells_information_list)
+            return RNAseq_Sample(counts=cells,
+                                 gene_names=self.gene_names,
+                                 barcodes=barcodes,
+                                 features=self.features,
+                                 cells_information=cells_information)
+
+        if isinstance(item, list):
+            # identify if we are dealing with binary indexes or explicit indexes.
+            if sum([(ii == 0 or ii == 1) for ii in item]) == len(item):
+                # converts to explicit indexes.
+                item = [i for i in range(len(item)) if item[i]]
+
+            barcodes = [self.barcodes[ii] for ii in item]
+            cells = self.counts[item, :]
+            cells_information = Cell_Inf_List()
+            cells_information.cells_information_list = self.cells_information[item]
+            cells_information.number_of_cells = len(cells_information.cells_information_list)
+
+            return RNAseq_Sample(counts=cells,
+                                 gene_names=self.gene_names,
+                                 barcodes=barcodes,
+                                 features=self.features,
+                                 cells_information=cells_information)
 
 
 class Cell_Inf_List:
@@ -136,22 +184,26 @@ class Cell_Inf_List:
         self.number_of_cells = n_of_cells
 
     def __getitem__(self, item):
-        if isinstance(item, int) or isinstance(item, np.int16) or isinstance(item, np.int32) or isinstance(item, np.int64
+        if isinstance(item, int) or isinstance(item, np.int16) or isinstance(item, np.int32) or isinstance(item,
+                                                                                                           np.int64
                                                                                                            ):
             return self.cells_information_list[item]
         if isinstance(item, slice):
             return self.cells_information_list[item]
         if isinstance(item, list):
             # identify if we are dealing with binary indexes or explicit indexes.
-            if sum([(ii == 0 or ii == 1) for ii in item]) == len(item):
+            if sum([(ii == 0 or ii == 1) for ii in item]) == len(item) and len(item) > 1:
                 # converts to explicit indexes
                 item = [i for i in range(len(self)) if item[i]]
-            return [c_inf for c_idx, c_inf in enumerate(self.cells_information_list) if c_idx in item]
+            return [self.cells_information_list[ii] for ii in item]
         if isinstance(item, np.ndarray):
             if item.dtype == bool:
                 item = np.where(item)[0]
             item = item.tolist()
-            return [c_inf for c_idx, c_inf in enumerate(self.cells_information_list) if c_idx in item]
+            return [self.cells_information_list[ii] for ii in item]
+
+    def __len__(self):
+        return self.number_of_cells
 
     def setattr(self, attr_name, idx_list, val):
         """
@@ -160,8 +212,12 @@ class Cell_Inf_List:
         :param val:
         :return:
         """
-        for idx in idx_list:
-            setattr(self.cells_information_list[idx], attr_name, val)
+        if not idx_list is None:
+            for idx in idx_list:
+                setattr(self.cells_information_list[idx], attr_name, val)
+        else:
+            for idx in range(len(self)):
+                setattr(self.cells_information_list[idx], attr_name, val)
 
     def setattr_list(self, attr_name, idx_list, val_list):
         for idx, val in zip(idx_list, val_list):
@@ -194,6 +250,10 @@ class Cell_information:
         is_classified - TRUE if the final classification is immune (not related to cancer classification).
 
         is_doublet - TRUE is was found to be doublet by Scrublet
+
+        should_be_removed - gets a value after running use_inferCNV_clustering_to_update_data. use this flag in order to
+        dismiss unwanted cells you wouldn't use in downstream analysis. (it is kind of combination of dying cells
+        and cells with conflicts which in inferCNV we concluded that we have no interest in them anymore.
         """
 
         self.cell_type_list = []
@@ -206,15 +266,8 @@ class Cell_information:
         self.is_lymphoid = False
         self.is_myeloid = False
         self.is_CelBender_empty = False
-        self.is_stormal = False
+        self.is_stromal = False
         self.inferCNV = None
+        self.should_be_removed = False
         self.count_insertions = 0
         self.count_deletions = 0
-
-
-
-
-
-
-
-

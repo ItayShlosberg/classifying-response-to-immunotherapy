@@ -30,8 +30,8 @@ from DL.Mars_seq_DL.data_loading import extract_droplet_data_from_pickle
 from os.path import join
 from termcolor import colored
 
-SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\classifying_cell_types\16.12.20_empty_removed'
-OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\apoptosis\16.12.20_empty_removed'
+SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\classifying_cell_types\17.2.21'
+OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\apoptosis\17.2.21'
 
 # Use 10X clusters
 CLUSTER_FOLDER_PATH = r'D:\Technion studies\Keren Laboratory\Data\Melanoma\clusters'

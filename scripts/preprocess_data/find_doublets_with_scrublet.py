@@ -11,12 +11,12 @@ from os.path import join
 from utilities.general_helpers import *
 from termcolor import colored
 
-SAMPLES = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\apoptosis\16.12.20_empty_removed'
-OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\scrublet\16.12.20_empty_removed'
+SAMPLES = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\apoptosis\17.2.21'
+OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\scrublet\21.2.21'
 
 # Union summaries - None if you don't want to combine with older summary,
 # otherwise specify the previous summary
-UNION_SUMMARY_PATH = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\apoptosis\16.12.20_empty_removed\apoptosis_summary.csv'
+UNION_SUMMARY_PATH = None #r'D:\Technion studies\Keren Laboratory\python_playground\outputs\apoptosis\16.12.20_empty_removed\apoptosis_summary.csv'
 
 
 def extract_sample(sample_id):

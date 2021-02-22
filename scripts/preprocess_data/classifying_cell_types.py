@@ -23,8 +23,8 @@ from DL.Mars_seq_DL.data_loading import extract_droplet_data_from_pickle
 from os.path import join
 
 
-SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\CellBender\PARAMETERIZED_RUN_RNASEQ\empty_removed'
-OUT_FOLDER = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\classifying_cell_types\16.12.20_empty_removed'
+SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\Data\droplet_seq\all_samples_10.12.20'
+OUT_FOLDER = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\classifying_cell_types\17.2.21'
 MARKERS_PATH = r'D:\Technion studies\Keren Laboratory\Data\tables\ImmuneCellsMarkersUpdated_12.11.20.xlsx'
 
 
@@ -416,7 +416,7 @@ def summary_over_all_samples():
     """
     summary_df = pd.DataFrame(columns=['sample name',
                                        'n_cells',
-                                       'p_immune_cells',
+                                       'p_immune&cancer_cells',
                                        'n_immune_cells',
                                        'n_cancer_cells',
                                        'n_pos_neg_markers_conflicts',

@@ -131,6 +131,16 @@ def visualization_confusion_matrix(labels, predictions, title=None, save_path=No
     return cm
 
 
+def binary_list_to_indices_list(lst):
+    new_lst = [ii for ii in range(len(lst)) if lst(ii)]
+    return new_lst
+
+
+def indices_list_to_binary_list(lst):
+    new_lst = [ii in lst for ii in range(len(lst))]
+    return new_lst
+
+
 def create_folder(folder):
     if not os.path.isdir(folder):
         os.mkdir(folder)

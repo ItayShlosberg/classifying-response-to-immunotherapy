@@ -11,7 +11,7 @@ This script goes through all the folders and builds python structures that will 
 
 
 PROTEIN_CODING_FILE = r'..\..\Data\gene_ens_map.xlsx'
-ROOT_PATH = r'..\..\Data\rna_seq200k\all_samples'
+ROOT_PATH = r'D:\Technion studies\Keren Laboratory\Data\droplet_seq\all_samples'
 PRODUCT_PATH = r'..\..\Data\rna_seq200k'
 
 
@@ -47,12 +47,12 @@ def convert_txt_to_python_structure():
     gene_name_suffix = 'GeneName.txt'
     sample_name_suffix = 'sample_name.txt'
     folders = [(os.path.join(ROOT_PATH, subfolder), subfolder) for subfolder in os.listdir(ROOT_PATH)]
-    gene_lists = extract_all_gene_names()
-    gene_list = Cohort_RNAseq.uniform_gene_list(gene_lists)
+   # gene_lists = extract_all_gene_names()
+   # gene_list = Cohort_RNAseq.uniform_gene_list(gene_lists)
     cohort_RNA_samples = []#Cohort_RNAseq(gene_list)
     for idx, (folder_path, folder) in enumerate(folders):
-        # if folder != 'M143':
-        #     continue
+        if folder != 'M139':
+            continue
         print(f'number {idx+1} folder {folder}')
         # geneName
         gene_name_path = os.path.join(folder_path, gene_name_suffix)
@@ -72,15 +72,15 @@ def convert_txt_to_python_structure():
             sample_list = read_file.readlines()
             sample_list = [sample[:-2] for sample in sample_list]
 
-        # with open(counts_path, 'r') as read_file:
-        #     counts = read_file.readlines()
-        #     counts = np.array([str_list_to_float(counts.split(' ')[:-1]) for counts in counts]).astype(np.uint16).T
+        with open(counts_path, 'r') as read_file:
+            counts = read_file.readlines()
+            counts = np.array([str_list_to_float(counts.split(' ')[:-1]) for counts in counts]).astype(np.uint16).T
 
-        # RNA_sample = RNAseq_Sample(counts, gene_lists, sample_list, ens_id_list)
+        RNA_sample = RNAseq_Sample(counts, gene_lists, sample_list, ens_id_list)
         # cohort_RNA_samples.add_RNAseq(RNA_sample)
-        # pickle.dump((RNA_sample), open(os.path.join(folder_path, "RNA_sample.pkl"), "wb"))
+        pickle.dump((RNA_sample), open(os.path.join(folder_path, "RNA_sample.pkl"), "wb"))
         # cohort_RNA_samples.append(RNA_sample)
-        cohort_RNA_samples.append(ens_id_list)
+        #cohort_RNA_samples.append(ens_id_list)
     _breakpoint = 0
     # pickle.dump((cohort_RNA_samples), open(os.path.join(PRODUCT_PATH, "dropletRNAseq_dataset.pkl"), "wb"))
 

@@ -1,6 +1,7 @@
 """
 Use that script to create input to InferCNV.
 You should define the input path of the samples in PKL format.
+InferCNV annotation: immune -> immune. NOT immune - Cancer (even if there is no tag at all).
 """
 
 from utilities.droplet_dataset import *
@@ -8,9 +9,8 @@ from DL.Mars_seq_DL.data_loading import extract_droplet_data_from_pickle
 from os.path import join
 
 
-OUTPUT_DIR = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\converted_data_31.12.20'
-INPUT_DIR = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\scrublet\10.12.20'
-
+INPUT_DIR = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\temporal garbage\17.2.21'
+OUTPUT_DIR = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\temporal garbage\converted'
 
 def convert_matrix(rna_sample, sample_id):
 
