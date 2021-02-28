@@ -2,23 +2,34 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Cursor, Button
 import numpy as np
 import matplotlib
+from utilities.droplet_dataset import  build_cohort
+import os
+from os.path import join
+from DL.Mars_seq_DL.data_loading import *
+from utilities.droplet_dataset import *
 
-x, y = np.random.rand(2, 100)
 
-fig, ax = plt.subplots()
+SAMPLES = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\update_runs\21.2.21'
 
-p, = plt.plot(x, y, 'o')
 
-cursor = Cursor(ax,
-                horizOn=True,
-                vertOn=True,
-                color='green',
-                linewidth=2.0)
+cohort = None# build_cohort(SAMPLES, gene_path =r'D:\Technion studies\Keren Laboratory\python_playground\outputs\temporal garbage\gene_cohort.pkl')
 
-def onclick(event):
-    x1, y1 = event.xdata, event.ydata
-    print(x1, y1)
 
-fig.canvas.mpl_connect('button_press_event', onclick)
+samples = [subfolder for subfolder in os.listdir(SAMPLES) if not 'csv' in subfolder]
+rna_sample = extract_droplet_data_from_pickle(join(SAMPLES, samples[3]))
+rna_sample = rna_sample[[not aa for aa in rna_sample.cells_information.getattr('should_be_removed')]]
+rna_sample.normalize_data()
 
-plt.show()
+
+sample_cell_idx = 50
+cell_barcode = rna_sample.barcodes[sample_cell_idx]
+cohort_cell_index = cohort.barcodes.index(cell_barcode)
+
+
+sample_gene_idx = rna_sample[sample_cell_idx][0].argmax()
+feature_name = rna_sample.features[sample_gene_idx]
+cohort_gene_index = cohort.features.index(feature_name)
+
+check = cohort.counts[cohort_cell_index, cohort_gene_index] == rna_sample.counts[sample_cell_idx, sample_gene_idx]
+
+_breakpoint = 0

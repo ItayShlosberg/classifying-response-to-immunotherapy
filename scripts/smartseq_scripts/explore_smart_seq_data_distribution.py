@@ -16,10 +16,10 @@ import seaborn as sns
 from DL.data_creation import filter_genes_by_variance
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from sklearn.metrics import auc
-from DL.data_loading import *
+from DL.Mars_seq_DL.data_loading import *
 from utilities.general_helpers  import *
 # PICKLE_PATH = r'DATA\1-16291cells.p'
-PICKLE_PATH = r'DATA\RNAseq_DATA.p'
+PICKLE_PATH = r'D:\Technion studies\Keren Laboratory\Data\smart_seq\SmartSeq_RNAseq_DATA.p'
 CHECKPOINT_TSNE_PATH = r'DATA\TSNE_Embedded_1-16291cells_randInt21'  # comes into play as import OR export path.
 TSNE_IMPORT_EXPORT = False  # FALSE - Import, TRUE - EXPORT
 

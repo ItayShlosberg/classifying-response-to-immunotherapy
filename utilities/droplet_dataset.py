@@ -3,56 +3,208 @@ Python structures for droplet data of 2020.
 """
 from utilities.general_helpers import *
 import numpy as np
+from os.path import join
 import numpy as np
+import pickle
+from DL.Mars_seq_DL.data_loading import *
 
 
-class Alignment_Cohort_RNAseq:
-    def __init__(self, gene_list):
-        """
-        :param sample_list:
-        :param overlapping_genes:
-        False - the gene list contains all genes from all cells.
-        and if there some cell lacks genes of other cells we complete it to zero.
-        True - the gene list contains only genes appearing in all cells.
-        """
-        self.gene_list = gene_list
-        self.sample_list = []
-        self.number_of_samples = 0
+def build_cohort_gene_list(samples_path):
+    samples = [subfolder for subfolder in os.listdir(samples_path) if not 'csv' in subfolder]
 
-    def add_RNAseq(self, sample, makeover_required=True):
-        """
-        A choice - keep only overlapping genes OR complete genes if need, then arrange them in a uniform order.
-        :param in_place: True - if you want to save it in self. False - get a new object only.
-        :param fixed_length_mode:
-        False - the gene list contains all genes from all cells.
-        and if there some cell lacks genes of other cells we complete it to zero.
-        True - the gene list contains only genes appearing in all cells.
-        :return: The new cohort object.
-        """
-        if makeover_required:
-            sample.makeover_genes(self.gene_list)
-        self.sample_list.append(sample)
-        self.number_of_samples += 1
+    gene_ids = []
+    # loop over all samples and add each of them into the cohort.
+    for sample in samples:
+        # retrieve sample from PC
+        rna_sample = extract_droplet_data_from_pickle(join(samples_path, sample))
+        gene_ids += list(zip(rna_sample.features, rna_sample.gene_names))
 
-    @staticmethod
-    def uniform_gene_list(gene_lists):
-        gene_list = sorted(list(set(flatten_list(gene_lists))))
-        return gene_list
+    gene_ids = sorted(list(set(gene_ids)), key=lambda x: x[0])
+    return gene_ids
+
+
+def build_cohort(samples_path, gene_path=None, save_path=None):
+    # build cohort gene list in needed.
+    if gene_path:
+        gene_id_list = pickle.load(open(gene_path, 'rb'))
+    else:
+        gene_id_list = build_cohort_gene_list(samples_path)
+        if save_path:
+            pickle.dump(gene_id_list, open(save_path, 'wb'))
+
+    samples = [subfolder for subfolder in os.listdir(samples_path) if not 'csv' in subfolder]
+    accumulative_counting_table = None
+    cohort_gene_names = [gg[1] for gg in gene_id_list]
+    cohort_gene_features = [gg[0] for gg in gene_id_list]
+    cohort_barcodes = []
+    cohort_mapping_samples = []
+    cohort_cells_information = Cell_Inf_List()
+    # loop over all samples and add each of them into the cohort.
+    for sample in samples[:4]:
+
+        # retrieve sample from PC ###
+        rna_sample = extract_droplet_data_from_pickle(join(samples_path, sample))
+
+        ### Remove garbage cells ###
+        rna_sample = rna_sample[[not should_be_removed for should_be_removed
+                                 in rna_sample.cells_information.getattr('should_be_removed')]]
+
+        ### Normalize sample ###
+        rna_sample.normalize_data()
+
+
+        sample_number_of_cells = rna_sample.number_of_cells
+
+        ### fill cohort barcodes and mapping_samples ###
+        cohort_barcodes += rna_sample.barcodes
+        cohort_mapping_samples += [sample.replace('.pkl', '')]*sample_number_of_cells
+        cohort_cells_information = cohort_cells_information + rna_sample.cells_information
+
+        ### gene alignment ###
+        # take the corresponding indices of sample gene in cohort_gene_features
+        cohort_gene_indices = [cohort_gene_features.index(g_id) for g_id in rna_sample.features]
+        # build an array with zeros
+        aligned_counting_table = np.zeros((sample_number_of_cells, len(gene_id_list)))
+        # fill 'aligned counting table' using cohort_gene_indices
+        aligned_counting_table[:, cohort_gene_indices] = rna_sample.counts
+
+
+        # add current aligned sample into accumulative counting table
+        if accumulative_counting_table is not None:
+            accumulative_counting_table = np.concatenate((accumulative_counting_table, aligned_counting_table))
+        else:
+            accumulative_counting_table = aligned_counting_table
+
+    cohort = Cohort_RNAseq(counts=accumulative_counting_table,
+                          gene_names=cohort_gene_names,
+                          barcodes=cohort_barcodes,
+                          features=cohort_gene_features,
+                          samples=cohort_mapping_samples,
+                          cells_information=cohort_cells_information)
+    return cohort
 
 
 class Cohort_RNAseq:
-    def __init__(self, gene_list):
-        self.sample_list = []
-        self.number_of_samples = 0
+    """
+    Storing all samples in one object. Similar to "RNAseq_Sample", except of having list of
+    sample ids corresponding to cells (in the same order), mapping each cell to sample.
+    All cells of all samples share the same numpy.array without separation.
+    Genes should be known for all samples. It means that before construction samples need to be aligned,
+    and if there is a gene of one sample that another sample doesn't have, we need to add a zero-value gene to that
+    sample. Only after alignment we can concatenate all cells of all samples together.
+    Also, the counting-table should be normalized. the cohort table values are normalized.
+    Finally, we have no garbage cell (apoptosis/empty cells). That guarantees the cohort is after QC, and ready for
+    analysis.
 
-    def add_RNAseq(self, sample):
+    External builder function, for first time construction, use 'build_cohort' with path of samples.
+
+    """
+    def __init__(self, counts, gene_names, barcodes, features, samples, cells_information=None):
         """
-        Add new RNAseq to Cohort.
-        :param sample: RNAseq object
-        :return:
+        :param counts: 2D-numpy array with rows as genes and columns as cells. The created object'll save the count
+        table in a manner which rows are the cells and columns are the genes, for convenience.
+        :param gene_names: ordered according to the cell order.
+        :param ens_id_list: not relevant, used in alignment preprocess.
+        :param samples_list: each cell has a unique id.
         """
-        self.sample_list.append(sample)
-        self.number_of_samples += 1
+        if counts is not None:
+            if counts.shape[0] != len(barcodes) or counts.shape[1] != len(gene_names)\
+                    or counts.shape[0] != len(samples):
+                raise Exception("unsuitable dimensions")
+            if features and counts.shape[1] != len(features):
+                raise Exception("unsuitable dimensions")
+        self.counts = counts
+        self.gene_names = gene_names
+        self.barcodes = barcodes
+        self.features = features
+        self.samples = samples
+        self.number_of_genes = len(gene_names)
+        self.number_of_cells = len(barcodes)
+        self.cells_information = Cell_Inf_List(self.number_of_cells)
+        if cells_information:
+            self.cells_information = cells_information
+
+    def get_subset_by_barcodes(self, barcode_list):
+        indices = [self.barcodes.index(bb) for bb in barcode_list]
+        return self[indices]
+
+    def filter_cells_by_property(self, prop_name, value):
+        return self[[aa == value for aa in self.cells_information.getattr(prop_name)]]
+
+    def filter_genes_by_variance(self, variance, in_place=True):
+        """
+        :param variance: genes with variance bigger than given value will stay, otherwise will be removed.
+        :param in_place: True - if you want the current working object itself to change,
+         or only returning a new calculated object.
+        :return: a new object filtered from genes with variance lower than given.
+        """
+
+        big_variance_genes = np.var(self.counts, axis=0) > variance
+        filtered_cells = self.counts[:, big_variance_genes]
+        filterd_features = [self.features[i] for i in range(len(self.gene_names)) if big_variance_genes[i]]
+        filtered_genes = [self.gene_names[i] for i in range(len(self.gene_names)) if big_variance_genes[i]]
+        if in_place:
+            self.counts = filtered_cells
+            self.gene_names = filtered_genes
+            self.features = filterd_features
+            print(f"Dataset was cleared from genes with variance of less than {variance}")
+
+        return Cohort_RNAseq(counts=filtered_cells,
+                              gene_names=filtered_genes,
+                              barcodes=self.barcodes,
+                              features=filterd_features,
+                              samples=self.samples,
+                              cells_information=self.cells_information)
+
+    def __getitem__(self, item):
+        """
+        :param item: indices (int,list,slice) -
+        int: return a value in place.
+        list: can be bool (each place - is taken/not taken) or numerical
+        (the numbers corresponding the actual places you're interested)
+
+        :return: int - cell vector of genes, and sub list of cells_information.
+        otherwise - sub object corresponding to actual indices.
+        """
+        if isinstance(item, int):
+            return self.counts[item], self.cells_information[item]
+
+        if isinstance(item, slice):
+            lst_indices = list(
+                range(item.indices(self.number_of_cells + 1)[0], item.indices(self.number_of_cells + 1)[1]))
+            barcodes = [self.barcodes[ii] for ii in lst_indices]
+            samples = [self.samples[ii] for ii in lst_indices]
+            cells = self.counts[item, :]
+            cells_information = Cell_Inf_List()
+            cells_information.cells_information_list = self.cells_information[item]
+            cells_information.number_of_cells = len(cells_information.cells_information_list)
+
+            return Cohort_RNAseq(counts=cells,
+                                 gene_names=self.gene_names,
+                                 barcodes=barcodes,
+                                 samples=samples,
+                                 features=self.features,
+                                 cells_information=cells_information)
+
+        if isinstance(item, list):
+            # identify if we are dealing with binary indexes or explicit indexes.
+            if sum([(ii == 0 or ii == 1) for ii in item]) == len(item):
+                # converts to explicit indexes.
+                item = [i for i in range(len(item)) if item[i]]
+
+            barcodes = [self.barcodes[ii] for ii in item]
+            samples = [self.samples[ii] for ii in item]
+            cells = self.counts[item, :]
+            cells_information = Cell_Inf_List()
+            cells_information.cells_information_list = self.cells_information[item]
+            cells_information.number_of_cells = len(cells_information.cells_information_list)
+
+            return Cohort_RNAseq(counts=cells,
+                                 gene_names=self.gene_names,
+                                 barcodes=barcodes,
+                                 samples=samples,
+                                 features=self.features,
+                                 cells_information=cells_information)
 
 
 class RNAseq_Sample:
@@ -74,44 +226,13 @@ class RNAseq_Sample:
         self.gene_names = gene_names
         self.barcodes = barcodes
         self.features = features
-        self.cohort_adjustment = False
+        # self.cohort_adjustment = False
+        self.is_normalized = False
         self.number_of_genes = len(gene_names)
         self.number_of_cells = len(barcodes)
         self.cells_information = Cell_Inf_List(self.number_of_cells)
         if cells_information:
             self.cells_information = cells_information
-
-    def makeover_genes(self, ens_id_list):
-        """
-        TODO: build that function from scratch. for now not relevant. only when we'll run model and wand to be consistent with the order of the genes.
-
-        Change the dimension of genes according to the Cohort whole genes. Add zeros in places where there is no
-        apparent gene and rearrange the order of the genes.
-        :param ens_id_list:
-        :return:
-        """
-        all_ens_indexes = self.map_indexes(ens_id_list)
-        fixed_counts = np.zeros((self.number_of_cells, len(ens_id_list)))
-        fixed_counts[:, all_ens_indexes] = self.counts
-        self.ens_id_list = ens_id_list
-        self.number_of_genes = len(all_ens_indexes)
-        self.counts = fixed_counts
-
-    def map_indexes(self, all_genes):
-        """
-        TODO: Not in use, consider removing it.
-        :param all_genes:
-        :return:
-        """
-        current_genes = self.gene_names
-        all_genes_indexes = []
-        for gene in self.gene_names:
-            idx = binary_search(all_genes, gene)
-            if idx == -1:
-                raise ValueError
-            all_genes_indexes.append(idx)
-
-        return all_genes_indexes
 
     def get_subset_by_barcodes(self, barcode_list):
         indices = [self.barcodes.index(bb) for bb in barcode_list]
@@ -143,7 +264,7 @@ class RNAseq_Sample:
         :return:
         """
         if isinstance(item, int):
-            return self.counts[item], self.cells_information_list[item]
+            return self.counts[item], self.cells_information[item]
         if isinstance(item, slice):
             lst_indices = list(
                 range(item.indices(self.number_of_cells + 1)[0], item.indices(self.number_of_cells + 1)[1]))
@@ -175,6 +296,32 @@ class RNAseq_Sample:
                                  barcodes=barcodes,
                                  features=self.features,
                                  cells_information=cells_information)
+
+    def normalize_data(self):
+        """
+        TODO: validate with Keren that 100K is ok. since using 10K leads to zero values
+        in_place function.
+        Will normalize each ***CELL*** separately:
+        sum = sum(Cell) # sum up all reads in cell of all genes.
+        scaling_factor = sum / 10,000
+        For each gene_expression:
+            if expression != 0:
+                normalized_gene_expression = Log2(gene_expression / scaling_factor) + 1
+            if expression = 0:
+            normalized_gene_expression = 0
+        :return: 1 - if normalizing succeeded, 0 - otherwise (already normalized)
+        """
+
+        if self.is_normalized:
+            return 0
+        sum_cells = self.counts.sum(axis=1)  # for each cell
+        scaling_factors = sum_cells / 100000
+
+        normalized_cells = np.log2((self.counts / scaling_factors[:, None])) + 1
+        normalized_cells[np.isneginf(normalized_cells)] = 0
+        self.counts = normalized_cells
+        self.is_normalized = True
+        return 1
 
 
 class Cell_Inf_List:
@@ -228,6 +375,15 @@ class Cell_Inf_List:
             return [getattr(self.cells_information_list[idx], attr_name) for idx in idx_list]
         else:
             return [getattr(c_inf, attr_name) for c_inf in self.cells_information_list]
+
+    def __add__(self, other):
+        if not isinstance(other, self.__class__):
+            raise Exception(f'There was an attempt to use addition operator with object of type Cell_Inf_List and {type(other)}')
+
+        res = Cell_Inf_List()
+        res.number_of_cells = other.number_of_cells + self.number_of_cells
+        res.cells_information_list = self.cells_information_list + other.cells_information_list
+        return res
 
 
 class Cell_information:

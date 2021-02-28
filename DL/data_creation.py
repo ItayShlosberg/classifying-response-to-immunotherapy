@@ -14,7 +14,7 @@ CELLS_RANGE = [1, 16291]  # should be an integer (indicates k first cells) or a 
 
 
 """
-Smart_seq scRNAseqBuilding 2018 Data. PKL files contain all information need to further analysis.
+Smart_seq scRNAseqBuilding 2018 Data. PKL files contain all information needed for further analysis.
 """
 
 
