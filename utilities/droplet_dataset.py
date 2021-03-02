@@ -9,6 +9,27 @@ import pickle
 from DL.Mars_seq_DL.data_loading import *
 
 
+def normalize_data(counts):
+    """
+    Will normalize each ***CELL*** separately:
+    sum = sum(Cell) # sum up all reads in cell of all genes.
+    scaling_factor = sum / 10,000
+    For each gene_expression:
+        if expression != 0:
+            normalized_gene_expression = Log2(gene_expression / scaling_factor) + 1
+        if expression = 0:
+        normalized_gene_expression = 0
+    :return: 1 - if normalizing succeeded, 0 - otherwise (already normalized)
+    """
+
+    sum_cells = counts.sum(axis=1)  # for each cell
+    scaling_factors = sum_cells / 10000
+
+    normalized_cells = np.log2((counts / scaling_factors[:, None]) + 1)
+    normalized_cells[np.isneginf(normalized_cells)] = 0
+    return normalized_cells
+
+
 def build_cohort_gene_list(samples_path):
     samples = [subfolder for subfolder in os.listdir(samples_path) if not 'csv' in subfolder]
 
@@ -41,17 +62,13 @@ def build_cohort(samples_path, gene_path=None, save_path=None):
     cohort_cells_information = Cell_Inf_List()
     # loop over all samples and add each of them into the cohort.
     for sample in samples:
-
+        print(f"Working on {sample}")
         # retrieve sample from PC ###
         rna_sample = extract_droplet_data_from_pickle(join(samples_path, sample))
 
         ### Remove garbage cells ###
         rna_sample = rna_sample[[not should_be_removed for should_be_removed
                                  in rna_sample.cells_information.getattr('should_be_removed')]]
-
-        ### Normalize sample ###
-        rna_sample.normalize_data()
-
 
         sample_number_of_cells = rna_sample.number_of_cells
 
@@ -75,6 +92,7 @@ def build_cohort(samples_path, gene_path=None, save_path=None):
         else:
             accumulative_counting_table = aligned_counting_table
 
+    accumulative_counting_table = normalize_data(accumulative_counting_table)
     cohort = Cohort_RNAseq(counts=accumulative_counting_table,
                           gene_names=cohort_gene_names,
                           barcodes=cohort_barcodes,
