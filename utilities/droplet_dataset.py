@@ -40,7 +40,7 @@ def build_cohort(samples_path, gene_path=None, save_path=None):
     cohort_mapping_samples = []
     cohort_cells_information = Cell_Inf_List()
     # loop over all samples and add each of them into the cohort.
-    for sample in samples[:4]:
+    for sample in samples:
 
         # retrieve sample from PC ###
         rna_sample = extract_droplet_data_from_pickle(join(samples_path, sample))
@@ -315,9 +315,9 @@ class RNAseq_Sample:
         if self.is_normalized:
             return 0
         sum_cells = self.counts.sum(axis=1)  # for each cell
-        scaling_factors = sum_cells / 100000
+        scaling_factors = sum_cells / 10000
 
-        normalized_cells = np.log2((self.counts / scaling_factors[:, None])) + 1
+        normalized_cells = np.log2((self.counts / scaling_factors[:, None]) + 1)
         normalized_cells[np.isneginf(normalized_cells)] = 0
         self.counts = normalized_cells
         self.is_normalized = True
