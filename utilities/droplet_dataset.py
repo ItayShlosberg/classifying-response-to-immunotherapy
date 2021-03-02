@@ -92,6 +92,10 @@ def build_cohort(samples_path, gene_path=None, save_path=None):
         else:
             accumulative_counting_table = aligned_counting_table
 
+        del aligned_counting_table
+        del rna_sample
+        del cohort_gene_indices
+
     accumulative_counting_table = normalize_data(accumulative_counting_table)
     cohort = Cohort_RNAseq(counts=accumulative_counting_table,
                           gene_names=cohort_gene_names,
