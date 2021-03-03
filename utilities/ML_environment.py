@@ -78,3 +78,9 @@ def fing_marker_genes_in_clusters(Data_RNAseq, clusters_list):
             p_values.append(pvalue)
 
     sm.stats.multitest.multipletests(p_values, alpha=0.05, method='fdr_bh', is_sorted=False, returnsorted=False)
+
+def shows_statistics_in_clusters(Data_RNAseq, clusters_list):
+    cluster_samples = {}
+    for cluster_id in set(clusters_list):
+        cluster_indices = [idx for idx, ii in enumerate(clusters_list) if ii == cluster_id]
+        cluster_samples[cluster_id] = Data_RNAseq[cluster_indices]

@@ -7,6 +7,8 @@ from os.path import join
 import numpy as np
 import pickle
 from DL.Mars_seq_DL.data_loading import *
+import pandas as pd
+CELL_TYPE_LIST = ['T cells', 'CD4 helper T cells', 'CD8 Cytotoxic T cells', 'Regulatory T cells', 'Regulatory CD4 T cells', 'Regulatory CD8 T cells', 'Regulatory CD4_CD8 T cells', 'NKT cells', 'NK cells', 'B cells', 'Activated T cells', 'Senescence T cells', 'Terminal effector', 'Exhausted T cells', 'Stem_like T cells', 'Memory T cells', 'Memory CD4 T cells', 'Memory CD8 T cells', 'Memory CD4_CD8 T cells', 'Macrophage_immature', 'Macrophage_mature', 'Monocyte_immature', 'Monocyte_mature', 'cDCs_dendritic_cells', 'pDCs', 'myeloid cells_general_immature', 'myeloid cells_general_mature', 'Neutrophils', 'Granolocytes', 'Immune_general']
 
 
 def normalize_data(counts):
@@ -108,6 +110,32 @@ def build_cohort(samples_path, gene_path=None, save_path=None):
                           samples=cohort_mapping_samples,
                           cells_information=cohort_cells_information)
     return cohort
+
+
+def loading_sample(row_data_path, cells_information_path):
+    """
+    Loading sample from path,
+    note: the sample is stored as row_data (with barcodes for identification).
+    and cells_information separately. that way it's possible to store the row_data only once while
+    performing multiple analysis
+
+    There is a sanity-check to check whether the barcodes of the cells' information are compatible
+    with the order of the barcodes in counts.
+    :param row_data_path: the path of the row data on PC.
+    :param cells_information_path: the path of the cells' information on PC.
+    :return: The RNAseq object
+    """
+
+
+    cells_information, barcodes_1, features_1, gene_names_1 = pickle.load(open(cells_information_path, 'rb'))
+    counts, barcodes_2, features_2, gene_names_2 = pickle.load(open(row_data_path, 'rb'))
+
+    if not are_the_lists_identical(features_1, features_2) or not are_the_lists_identical(gene_names_1, gene_names_2) or not are_the_lists_identical((barcodes_1, barcodes_2)):
+        raise Exception("Paths of sample are incompatible")
+
+    rna_sample = RNAseq_Sample(counts, gene_names_1, barcodes_1, features_1, cells_information)
+    return rna_sample
+
 
 
 class Cohort_RNAseq:
@@ -251,6 +279,7 @@ class Cohort_RNAseq:
                              self.samples + other.samples,
                              self.cells_information + other.cells_information)
 
+
 class RNAseq_Sample:
 
     def __init__(self, counts, gene_names, barcodes, features, cells_information=None):
@@ -367,6 +396,52 @@ class RNAseq_Sample:
         self.is_normalized = True
         return 1
 
+    def get_statistics(self):
+        """
+        :return: statistics DFs, one of cancer&immune&stroma and one of all immune cell-types.
+        """
+        n_cells = self.number_of_cells
+        n_cancer = sum(self.cells_information.getattr('is_cancer'))
+        n_stromal = sum(self.cells_information.getattr('is_stromal'))
+        immune_bool_indices = self.cells_information.getattr('is_immune')
+        n_immune = sum(immune_bool_indices)
+
+        cell_division_quantity = {'immune': n_immune, 'cancer': n_cancer, 'stromal': n_stromal}
+        cell_division_df = pd.DataFrame(
+            [list(cell_division_quantity.values()), [ii / n_cells for ii in cell_division_quantity.values()]],
+            columns=cell_division_quantity.keys())
+
+        immune_sample = self[immune_bool_indices]
+        immune_counter = dict(Counter(flatten_list(immune_sample.cells_information.getattr('cell_type_list'))))
+        for cell_type in CELL_TYPE_LIST:
+            if not cell_type in immune_counter.keys():
+                immune_counter[cell_type] = 0
+        immune_portions = {key: round(val / n_immune, 3) for key, val in immune_counter.items()}
+        immune_cell_types_df = pd.DataFrame([immune_counter.values(), immune_portions.values()], index=['count', 'portion'],
+                                            columns=immune_counter.keys())
+
+        return {"cell division": cell_division_df, "immune cell types": immune_cell_types_df}
+
+    def save_cells_information(self, path):
+        """
+        Saving pickle of the object. default - only the cells information with barcodes
+        :return:
+        """
+        pickle.dump((self.cells_information,
+                     self.barcodes,
+                     self.features,
+                     self.gene_names), open(path, 'wb'))
+
+    def save_row_data(self, path):
+        """
+        Saving pickle of the object. default - only the cells information with barcodes
+        :return:
+        """
+        pickle.dump((self.counts,
+                     self.barcodes,
+                     self.features,
+                     self.gene_names), open(path, 'wb'))
+
 
 class Cell_Inf_List:
 
@@ -433,6 +508,9 @@ class Cell_Inf_List:
 class Cell_information:
     def __init__(self):
         """
+        cell_type_list - list of all immune cell-types the cell is associated with, final decision after
+        dealing with all kinds of conflicts.
+
         conflict_related_cell_types - names of cell-types which the cell was assigned to those cell-types but there was
         a conflict with negative markers. Therefore can't be that there is a cell-type in conflict_related_cell_types
         that also appears in cell_type_list and vise-versa. But, it's possible and actually this is the case many
@@ -443,13 +521,24 @@ class Cell_information:
         can be any other case too. For instance - can contain cell-type in cell_type_list and also be apoptosis.
         Note, you have to run remove_apoptosis_cells.py first in order to see a value in that property.
 
-        is_cancer - Only if there was an immune classification (that wasn't removed due to neg-pos conflict) and also
-        cancer classification right after.
+        is_immune - TRUE if the final classification is immune (that wasn't removed due to neg_markers&pos_markers conflict)
+        and also there wasn't a cancer classification right after.
 
+        is_cancer - TRUE if the classification of the cell is cancer. After running classifying_cell_types.py is might be true
+        only if a tumor_marker was found to be expressed and there was no conflicts with immune_markers.
+        After running use_inferCNV_clustering_to_update_data.py there might be cells that tumor_makers weren't
+        found and even though classified as tumor, or cells that might have tumor_markers and immune_markers that before
+        weren't defined as something and now are classified as tumor since their CNV map implied they are tumor.
 
-        is_classified - TRUE if the final classification is immune (not related to cancer classification).
+        is_stromal - True if the classification of the cell is stroma. After running classifying_cell_types.py
+        the cells that didn't have classification as tumor or immune and havn't been removed due to containing
+        immune/cancer conflicts. will be probably classified as stroma.
 
         is_doublet - TRUE is was found to be doublet by Scrublet
+
+        self.is_CelBender_empty - True if in the output of cellBender the cell has been marked as empty cell.
+        Note that CellBender output update isn't part of the pipeline and as so, there's need to open the output
+        of cellBender separately for analysis.
 
         should_be_removed - gets a value after running use_inferCNV_clustering_to_update_data. use this flag in order to
         dismiss unwanted cells you wouldn't use in downstream analysis. (it is kind of combination of dying cells
@@ -467,7 +556,5 @@ class Cell_information:
         self.is_myeloid = False
         self.is_CelBender_empty = False
         self.is_stromal = False
-        self.inferCNV = None
         self.should_be_removed = False
-        self.count_insertions = 0
-        self.count_deletions = 0
+

@@ -9,15 +9,19 @@ from DL.Mars_seq_DL.data_loading import *
 from utilities.droplet_dataset import *
 
 
-SAMPLES = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\update_runs\21.2.21'
-OUTPUT = r'D:\Technion studies\Keren Laboratory\Data\droplet_seq\Cohort\cohort_all_samples_3.2.21.pkl'
+# SAMPLES = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\update_runs\21.2.21'
 
-cohort = build_cohort(SAMPLES)#, gene_path =r'D:\Technion studies\Keren Laboratory\python_playground\outputs\temporal garbage\gene_cohort.pkl')
+OUTPUT = r'D:\Technion studies\Keren Laboratory\Data\droplet_seq\Cohort\cohort_all_samples_3.2.21.pkl'
+ss = r'C:\Users\itay\Desktop\New folder'
+
+
+cohort = build_cohort(ss)#, gene_path =r'D:\Technion studies\Keren Laboratory\python_playground\outputs\temporal garbage\gene_cohort.pkl')
+
 
 # pickle.dump((cohort), open(OUTPUT, "wb"))
-pickle.dump((cohort), open(OUTPUT, 'wb'), protocol=4)#
-
-cc = pickle.load(open(OUTPUT, 'rb'))
+# pickle.dump((cohort), open(OUTPUT, 'wb'), protocol=4)#
+tt = cohort + cohort
+# cc = pickle.load(open(OUTPUT, 'rb'))
 
 _breakpoint = 0
 # samples = [subfolder for subfolder in os.listdir(SAMPLES) if not 'csv' in subfolder]
