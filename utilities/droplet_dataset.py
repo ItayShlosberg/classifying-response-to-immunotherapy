@@ -47,10 +47,13 @@ def build_cohort_gene_list(samples_path):
 def build_cohort(samples_path, gene_path=None, save_path=None):
     # build cohort gene list in needed.
     if gene_path:
+        print(f"Loading gene list from {gene_path}")
         gene_id_list = pickle.load(open(gene_path, 'rb'))
     else:
+        print("Building gene list of all samples")
         gene_id_list = build_cohort_gene_list(samples_path)
         if save_path:
+            print(f"Saving gene list in {save_path}")
             pickle.dump(gene_id_list, open(save_path, 'wb'))
 
     samples = [subfolder for subfolder in os.listdir(samples_path) if not 'csv' in subfolder]
@@ -96,6 +99,7 @@ def build_cohort(samples_path, gene_path=None, save_path=None):
         del rna_sample
         del cohort_gene_indices
 
+    print("Normalize Data")
     accumulative_counting_table = normalize_data(accumulative_counting_table)
     cohort = Cohort_RNAseq(counts=accumulative_counting_table,
                           gene_names=cohort_gene_names,
@@ -228,6 +232,24 @@ class Cohort_RNAseq:
                                  features=self.features,
                                  cells_information=cells_information)
 
+    def __add__(self, other):
+        """
+
+        :param other:
+        :return:
+        """
+
+        if other.number_of_genes != self.number_of_genes or \
+                sum([self.features[i]!=self.features[i] for i in range(self.number_of_genes)]) > 0:
+            raise AssertionError('genes are not compatible')
+
+
+        return Cohort_RNAseq(np.concatenate((self.counts, other.counts)),
+                             self.gene_names,
+                             self.barcodes + other.barcodes,
+                             self.features,
+                             self.samples + other.samples,
+                             self.cells_information + other.cells_information)
 
 class RNAseq_Sample:
 
