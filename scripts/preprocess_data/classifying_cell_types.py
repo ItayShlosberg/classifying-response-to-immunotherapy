@@ -23,8 +23,8 @@ from DL.Mars_seq_DL.data_loading import extract_droplet_data_from_pickle
 from os.path import join
 
 
-SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\Data\droplet_seq\all_samples_10.12.20'
-OUT_FOLDER = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\classifying_cell_types\17.2.21'
+ROW_SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\Data\droplet_seq\ROW_DATA'
+OUT_FOLDER = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\classifying_cell_types\2_3.3.21'
 MARKERS_PATH = r'D:\Technion studies\Keren Laboratory\Data\tables\ImmuneCellsMarkersUpdated_12.11.20.xlsx'
 
 
@@ -289,13 +289,17 @@ def extract_sample(sample_id):
     :param sample_id: id of rna sample (Mi)
     :return: rna_sample
     """
-    sample_path = join(SAMPLES_PATH, sample_id, f"{sample_id}.pkl")
+    sample_path = join(ROW_SAMPLES_PATH, sample_id, f"{sample_id}.pkl")
     rna_sample = extract_droplet_data_from_pickle(sample_path)
     print(f'sample id {sample_id}')
     print(f'count shape {rna_sample.counts.shape}')
     print(f'number of cells {rna_sample.number_of_cells}')
     print(f'number of genes {rna_sample.number_of_genes}')
     return rna_sample
+
+
+def print_sample_information(sample_name, rna_sample):
+    print(f'Working on {sample_name}, {rna_sample.number_of_cells} cells and {rna_sample.number_of_genes} genes')
 
 
 def classifying_cell_type(rna_sample, positive_markers_df, negative_markers_df):
@@ -360,7 +364,7 @@ def save_classification_summary_sample(sample_id,
     pos_neg_conflicts, cancers_conflicts. And CSV file for pos_neg_conflict_list.
     :param: All outputs from classifying_cell_type function.
     """
-    folder = join(OUT_FOLDER, sample_id)
+    folder = join(OUT_FOLDER, sample_id.replace('.pkl', ''))
     if not os.path.isdir(folder):
         os.mkdir(folder)
     pickle.dump(cell_mapping_table, open(join(folder, 'cell_mapping_table.pkl'), "wb"))
@@ -376,8 +380,8 @@ def save_classification_summary_sample(sample_id,
     # conflict_df.to_csv(join(folder, 'cells_with_neg_pos_conflict.csv'))
 
     # save also the updated rna object that now contains all the classification information.
-    pickle.dump(rna_sample, open(join(folder, f'{sample_id}.pkl'), 'wb'))
-
+    # pickle.dump(rna_sample, open(join(folder, f'{sample_id}.pkl'), 'wb'))
+    rna_sample.save_cells_information(join(folder, f'{sample_id}'))
 
 def update_rna_sample_cells_findings(rna_sample,
                                      cells_mapping_table,
@@ -421,7 +425,7 @@ def summary_over_all_samples():
                                        'n_cancer_cells',
                                        'n_pos_neg_markers_conflicts',
                                        'n_cancer_immune_conflicts'])
-    samples = [subfolder for subfolder in os.listdir(SAMPLES_PATH)]
+    samples = [subfolder for subfolder in os.listdir(ROW_SAMPLES_PATH)]
 
     # Extract ImmuneCellsMarkersUpdated Excel file from PC and load it into DataFrame.
     xls = pd.ExcelFile(MARKERS_PATH)
@@ -431,8 +435,8 @@ def summary_over_all_samples():
         os.mkdir(OUT_FOLDER)
     for sample in samples:
         # Extracts one of the samples from PC
-        rna_sample = extract_sample(sample)
-
+        rna_sample = loading_sample(row_data_path=join(ROW_SAMPLES_PATH, f'{sample}'))
+        print_sample_information(sample, rna_sample)
         # Classify sample's cells
         result = classifying_cell_type(rna_sample, positive_markers_df, negative_markers_df)
         cells_mapping_table = result['positive_cell_types_mapping_table']

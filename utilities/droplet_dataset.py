@@ -112,7 +112,7 @@ def build_cohort(samples_path, gene_path=None, save_path=None):
     return cohort
 
 
-def loading_sample(row_data_path, cells_information_path):
+def loading_sample(row_data_path, cells_information_path=None):
     """
     Loading sample from path,
     note: the sample is stored as row_data (with barcodes for identification).
@@ -126,16 +126,16 @@ def loading_sample(row_data_path, cells_information_path):
     :return: The RNAseq object
     """
 
+    counts, barcodes_1, features_1, gene_names_1 = pickle.load(open(row_data_path, 'rb'))
+    cells_information = None
+    if cells_information_path:
+        cells_information, barcodes_2, features_2, gene_names_2 = pickle.load(open(cells_information_path, 'rb'))
 
-    cells_information, barcodes_1, features_1, gene_names_1 = pickle.load(open(cells_information_path, 'rb'))
-    counts, barcodes_2, features_2, gene_names_2 = pickle.load(open(row_data_path, 'rb'))
-
-    if not are_the_lists_identical(features_1, features_2) or not are_the_lists_identical(gene_names_1, gene_names_2) or not are_the_lists_identical((barcodes_1, barcodes_2)):
-        raise Exception("Paths of sample are incompatible")
+        if not are_the_lists_identical(features_1, features_2) or not are_the_lists_identical(gene_names_1, gene_names_2) or not are_the_lists_identical(barcodes_1, barcodes_2):
+            raise Exception("Paths of sample are incompatible")
 
     rna_sample = RNAseq_Sample(counts, gene_names_1, barcodes_1, features_1, cells_information)
     return rna_sample
-
 
 
 class Cohort_RNAseq:
@@ -522,13 +522,14 @@ class Cell_information:
         Note, you have to run remove_apoptosis_cells.py first in order to see a value in that property.
 
         is_immune - TRUE if the final classification is immune (that wasn't removed due to neg_markers&pos_markers conflict)
-        and also there wasn't a cancer classification right after.
+        and also there wasn't a cancer classification right after. Note: Might be that it is marked as immune and also as apoptosis.
 
         is_cancer - TRUE if the classification of the cell is cancer. After running classifying_cell_types.py is might be true
         only if a tumor_marker was found to be expressed and there was no conflicts with immune_markers.
         After running use_inferCNV_clustering_to_update_data.py there might be cells that tumor_makers weren't
         found and even though classified as tumor, or cells that might have tumor_markers and immune_markers that before
         weren't defined as something and now are classified as tumor since their CNV map implied they are tumor.
+        Note: Might be that it is marked as cancer and also as apoptosis.
 
         is_stromal - True if the classification of the cell is stroma. After running classifying_cell_types.py
         the cells that didn't have classification as tumor or immune and havn't been removed due to containing

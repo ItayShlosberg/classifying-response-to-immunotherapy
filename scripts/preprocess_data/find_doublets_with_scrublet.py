@@ -10,9 +10,11 @@ from DL.Mars_seq_DL.data_loading import extract_droplet_data_from_pickle
 from os.path import join
 from utilities.general_helpers import *
 from termcolor import colored
+from utilities.droplet_dataset import loading_sample
 
-SAMPLES = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\apoptosis\17.2.21'
-OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\scrublet\21.2.21'
+ROW_SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\Data\droplet_seq\ROW_DATA'
+SAMPLES_INFORMATION_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\apoptosis\4.3.21'
+OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\scrublet\4.3.21'
 
 # Union summaries - None if you don't want to combine with older summary,
 # otherwise specify the previous summary
@@ -25,7 +27,7 @@ def extract_sample(sample_id):
     :param sample_id: id of rna sample (Mi)
     :return: rna_sample
     """
-    data_path = join(SAMPLES, sample_id, f'{sample_id}.pkl')
+    data_path = join(SAMPLES_INFORMATION_PATH, sample_id, f'{sample_id}.pkl')
     rna_sample = extract_droplet_data_from_pickle(data_path)
     print(colored(f'sample id {sample_id}', 'blue'))
     print(f'count shape {rna_sample.counts.shape}')
@@ -44,11 +46,13 @@ def run_scrub_over_all_samples():
                                        'n_cells',
                                        'n_scrub_doublets',
                                        'p_doublets'])
-    samples = [subfolder for subfolder in os.listdir(SAMPLES)]
+    samples = [subfolder for subfolder in os.listdir(SAMPLES_INFORMATION_PATH)]
     create_folder(OUTPUT_PATH)
     for sample in [s for s in samples if not 'csv' in s]:
+        print(f"Working on {sample}")
         # Extracts one of the samples from PC
-        rna_sample = extract_sample(sample)
+        rna_sample = loading_sample(row_data_path=join(ROW_SAMPLES_PATH, f'{sample}'),
+                                    cells_information_path=join(SAMPLES_INFORMATION_PATH, f'{sample}'))
         try:
             scrub = scr.Scrublet(rna_sample.counts)
             doublet_scores, predicted_doublets = scrub.scrub_doublets()
@@ -69,8 +73,10 @@ def run_scrub_over_all_samples():
                                                       sum(predicted_doublets)/rna_sample.number_of_cells]],
                                        columns=summary_df.columns))
 
-        create_folder(join(OUTPUT_PATH, sample))
-        pickle.dump((rna_sample), open(join(OUTPUT_PATH, sample, f'{sample}.pkl'), 'wb'))
+        # create_folder(join(OUTPUT_PATH, sample))
+        # pickle.dump((rna_sample), open(join(OUTPUT_PATH, sample, f'{sample}.pkl'), 'wb'))
+        rna_sample.save_cells_information(join(OUTPUT_PATH, f'{sample}'))
+
     return summary_df
 
 

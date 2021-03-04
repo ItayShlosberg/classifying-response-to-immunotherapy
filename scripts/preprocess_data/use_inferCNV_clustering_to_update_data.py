@@ -45,16 +45,18 @@ from DL.Mars_seq_DL.data_loading import extract_droplet_data_from_pickle
 from os.path import join
 from utilities.general_helpers import *
 from termcolor import colored
+from utilities.droplet_dataset import loading_sample
 
+# path for samples which will be used to update. Important: taking the last-updated scrublet output. (after all other QC processes).
+ROW_SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\Data\droplet_seq\ROW_DATA'
+SAMPLES_INFORMATION_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\scrublet\4.3.21'
 
-# path for samples which will be used to update. Important: taking the last-updated scrublet output. (after all QC processes).
-ROW_SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\scrublet\21.2.21'
 INFERCNV_SAMPLES_PATH = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\executions\all_data_31.12.20'
 # path of folder where all samples having cell needed be removed have PKL file containing all barcodes of the cell needed be removed.
 IMMUNE_CELLS_REMOVAL_PATH = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\analysis_conclusions\immune_clustering'
 # In that path all pkl of the updated properties will be saved.
 # OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\update_runs\21.2.21'
-OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\temporal garbage\fff'
+OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\update_runs\4.3.21'
 # Tumor table contains row for each sample splioting the tumor cells (Not immune cells) into cluster ##sorted by InferCNV output##
 TUMOR_TABLE_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\analysis_conclusions\tumor_classifying_clusters.xlsx'
 # Immune table contains row for each sample that have processed, if there are cells needed to be removed it's indicated in cluster-type.
@@ -67,7 +69,7 @@ def extract_sample(sample_id):
     :param sample_id: id of rna sample (Mi)
     :return: rna_sample
     """
-    data_path = join(ROW_SAMPLES_PATH, sample_id, f'{sample_id}.pkl')
+    data_path = join(SAMPLES_INFORMATION_PATH, sample_id, f'{sample_id}.pkl')
     rna_sample = extract_droplet_data_from_pickle(data_path)
     print(colored(f'sample id {sample_id}', 'blue'))
     print(f'count shape {rna_sample.counts.shape}')
@@ -204,13 +206,12 @@ def update_immune_cells(sample_id, rna_sample, immune_df):
 
 
 def go_over_all_samples(tumor_df, immune_df):
-    samples = [subfolder for subfolder in os.listdir(ROW_SAMPLES_PATH)]
+    samples = [ss.replace(".pkl", "") for ss in os.listdir(SAMPLES_INFORMATION_PATH)]
     create_folder(OUTPUT_PATH)
     for sample_id in [s for s in samples if (not 'csv' in s and not 'xlsx' in s)]:
-        if not "M101" in sample_id:
-            continue
         # Extracts one of the samples from PC
-        rna_sample = extract_sample(sample_id)
+        rna_sample = loading_sample(row_data_path=join(ROW_SAMPLES_PATH, f'{sample_id}.pkl'),
+                                    cells_information_path=join(SAMPLES_INFORMATION_PATH, f'{sample_id}.pkl'))
         rna_sample.cells_information.setattr('should_be_removed', None, False)
 
         # Update tumor cells
@@ -232,7 +233,8 @@ def go_over_all_samples(tumor_df, immune_df):
             rna_sample[doublets_indices].cells_information.setattr('should_be_removed', None, True)
 
         # Save an updated version of current sample_id with inferCNV changes.
-        pickle.dump((rna_sample), open(join(OUTPUT_PATH, f'{sample_id}.pkl'), 'wb'))
+        # pickle.dump((rna_sample), open(join(OUTPUT_PATH, f'{sample_id}.pkl'), 'wb'))
+        rna_sample.save_cells_information(join(OUTPUT_PATH, f'{sample_id}.pkl'))
 
 
 if __name__ == '__main__':
@@ -242,5 +244,4 @@ if __name__ == '__main__':
     immune_df = extract_immune_table()
 
     go_over_all_samples(tumor_df, immune_df)
-    print("hello")
     _breakpoint = 0

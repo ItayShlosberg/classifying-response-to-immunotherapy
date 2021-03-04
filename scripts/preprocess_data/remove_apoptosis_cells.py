@@ -30,8 +30,9 @@ from DL.Mars_seq_DL.data_loading import extract_droplet_data_from_pickle
 from os.path import join
 from termcolor import colored
 
-SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\classifying_cell_types\17.2.21'
-OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\apoptosis\17.2.21'
+SAMPLES_INFORMATION_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\classifying_cell_types\3.3.21'
+ROW_SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\Data\droplet_seq\ROW_DATA'
+OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\apoptosis\4.3.21'
 
 # Use 10X clusters
 CLUSTER_FOLDER_PATH = r'D:\Technion studies\Keren Laboratory\Data\Melanoma\clusters'
@@ -45,7 +46,7 @@ MIN_CLUSTER_THRESHOLD = 0.15
 NORMAL_SAMPLES_THRESHOLD = 0.2
 
 
-def extract_sample(sample_id, samples_path=SAMPLES_PATH):
+def extract_sample(sample_id, samples_path=ROW_SAMPLES_PATH):
     """
     Extracts one of the samples from PC
     :param sample_id: id of rna sample (Mi)
@@ -75,13 +76,13 @@ def extract_apoptosis_cluster_indexes(sample_id, intersting_cluster, rna_sample)
     cluster_table_path = join(CLUSTER_FOLDER_PATH, f'Graph_based_{sample_id}.csv')
     cluster_df = pd.read_csv(cluster_table_path)
 
+    # Convert clustering values to int.
+    cluster_df['Graph-based'] = [int(s.split(' ')[1]) for s in cluster_df['Graph-based']]
+
     # Align RNA sample barcodes to clustering table barcodes.
     clusters_barcodes = cluster_df["Barcode"].tolist()
     rna_sample_alignment_idx_to_clusters = [clusters_barcodes.index(_b) for _b in rna_sample.barcodes]
     cluster_indexes = cluster_df['Graph-based'].to_numpy()[rna_sample_alignment_idx_to_clusters]
-
-    # Convert clustering values to int.
-    cluster_df['Graph-based'] = [int(s.split(' ')[1]) for s in cluster_df['Graph-based']]
 
     # Check which cells belong to interesting cluster (apoptosis-wise cluster).
     cluster_indexes = np.isin(cluster_indexes, intersting_cluster)
@@ -98,12 +99,15 @@ def determine_apoptosis_in_normal_sample():
     print(colored('apoptosis_in_normal_samples', 'yellow'))
     apoptosis_clustes_df = pd.read_excel(pd.ExcelFile(APOPTOSIS_CLUSTERS_PATH))
 
-    all_samples = os.listdir(SAMPLES_PATH)
+    all_samples = [ss.replace(".pkl", "") for ss in os.listdir(ROW_SAMPLES_PATH)]
     normal_samples = [sm for sm in all_samples if
                       not sm in apoptosis_clustes_df['sample_id'].tolist() and not '.csv' in sm]
 
     for sample_id in normal_samples:
-        rna_sample = extract_sample(sample_id)
+
+        rna_sample = loading_sample(row_data_path=join(ROW_SAMPLES_PATH, f'{sample_id}.pkl'),
+                                    cells_information_path=join(SAMPLES_INFORMATION_PATH, sample_id,
+                                                                f'{sample_id}.pkl'))
 
         # Extract mitochondria content.
         counting_reads = rna_sample.counts.sum(axis=1).astype(np.float64)
@@ -121,9 +125,10 @@ def determine_apoptosis_in_normal_sample():
                 rna_sample.cells_information[apop_idx].is_apoptosis = True
 
         # Save rna_sample local. if same path is used it'll overwrite the sample.
-        output_folder = join(OUTPUT_PATH, sample_id)
-        create_folder(output_folder)
-        pickle.dump((rna_sample), open(join(output_folder, f"{sample_id}.pkl"), "wb"))
+        # output_folder = join(OUTPUT_PATH, sample_id)
+        # create_folder(output_folder)
+        # pickle.dump((rna_sample), open(join(output_folder, f"{sample_id}.pkl"), "wb"))
+        rna_sample.save_cells_information(join(OUTPUT_PATH, f'{sample_id}.pkl'))
 
 
 def determine_apoptosis_in_special_samples():
@@ -140,10 +145,12 @@ def determine_apoptosis_in_special_samples():
     apoptosis_clustes_df['clusters'] = apoptosis_clustes_df['clusters'].astype(str)
     for row_idx, row in apoptosis_clustes_df.iterrows():
         sample_id = row['sample_id']
+
         confidence_threshold = row['confidence_threshold']
         clusters = [int(ii) for ii in row['clusters'].split(';')]
 
-        rna_sample = extract_sample(sample_id)
+        rna_sample = loading_sample(row_data_path=join(ROW_SAMPLES_PATH, f'{sample_id}.pkl'),
+                                    cells_information_path=join(SAMPLES_INFORMATION_PATH, sample_id, f'{sample_id}.pkl'))#extract_sample(sample_id)
         cluster_indexes = extract_apoptosis_cluster_indexes(sample_id, clusters, rna_sample)
 
         # Extract mitochondria content.
@@ -163,10 +170,11 @@ def determine_apoptosis_in_special_samples():
             if not 'Neutrophils' in rna_sample.cells_information[apop_idx].cell_type_list:
                 rna_sample.cells_information[apop_idx].is_apoptosis = True
 
-        # Save rna_sample local. if same path is used it'll overwrite the sample.
-        output_folder = join(OUTPUT_PATH, sample_id)
-        create_folder(output_folder)
-        pickle.dump((rna_sample), open(join(output_folder, f"{sample_id}.pkl"), "wb"))
+        # Save rna_sample local. if same path is used it'll overwrite the sample. previous version the pkl was in folder in folder.
+        # output_folder = join(OUTPUT_PATH, sample_id)
+        # create_folder(output_folder)
+        # pickle.dump((rna_sample), open(join(output_folder, f"{sample_id}.pkl"), "wb"))
+        rna_sample.save_cells_information(join(OUTPUT_PATH, f'{sample_id}.pkl'))
 
 
 def add_apoptosis_summary():
@@ -190,8 +198,10 @@ def add_apoptosis_summary():
                                                  'cancer_immune_conflict'])
     for row_index, row in existing_summary_df.iterrows():
         sample_id = row['sample name']
+
         # Extract samples from OUTPUT path because that's the path of the UPDATED samples (with the apoptosis)
-        rna_sample = extract_sample(sample_id, OUTPUT_PATH)
+        rna_sample = loading_sample(row_data_path=join(ROW_SAMPLES_PATH, f'{sample_id}.pkl'),
+                                    cells_information_path=join(OUTPUT_PATH, f'{sample_id}.pkl'))
         number_of_cells = rna_sample.number_of_cells
 
         number_of_apoptosis_cells = sum([c_inf.is_apoptosis for c_inf in rna_sample.cells_information])
@@ -224,7 +234,7 @@ def add_apoptosis_summary():
     #     row_index = existing_summary_df[existing_summary_df['sample name'] == sample_id].index[0]
     #     existing_summary_df.at[row_index, 'number of apoptosis cells'] = number_of_apoptosis_cells
 
-    updated_apoptosis_df.to_csv(join(OUTPUT_PATH, 'apoptosis_summary.csv'), index= False)
+    updated_apoptosis_df.to_csv(join(OUTPUT_PATH, 'apoptosis_summary.csv'), index=False)
 
 
 if __name__ == '__main__':
