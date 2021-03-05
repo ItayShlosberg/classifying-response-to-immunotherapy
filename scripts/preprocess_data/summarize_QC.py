@@ -27,32 +27,33 @@ from DL.Mars_seq_DL.data_loading import extract_droplet_data_from_pickle
 from os.path import join
 from utilities.general_helpers import *
 from termcolor import colored
-
+from utilities.droplet_dataset import loading_sample
 
 # the path of the samples we want to summarize:
-ROW_SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\update_runs\21.2.21'
+ROW_SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\Data\droplet_seq\ROW_DATA'
+SAMPLES_INFORMATION_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\update_runs\4.3.21'
 
 # where wh excel output will be saved:
-OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\temporal garbage'
+OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\QC\QC_summary_5.3.21'
 
 
-def extract_sample(sample_id):
-    """
-    Extracts one of the samples from PC
-    :param sample_id: id of rna sample (Mi)
-    :return: rna_sample
-    """
-    data_path = join(ROW_SAMPLES_PATH, sample_id)
-    rna_sample = extract_droplet_data_from_pickle(data_path)
-    print(colored(f'sample id {sample_id}', 'blue'))
-    print(f'count shape {rna_sample.counts.shape}')
-    print(f'number of cells {rna_sample.number_of_cells}')
-    print(f'number of genes {rna_sample.number_of_genes}')
-    return rna_sample
+# def extract_sample(sample_id):
+#     """
+#     Extracts one of the samples from PC
+#     :param sample_id: id of rna sample (Mi)
+#     :return: rna_sample
+#     """
+#     data_path = join(ROW_SAMPLES_PATH, sample_id)
+#     rna_sample = extract_droplet_data_from_pickle(data_path)
+#     print(colored(f'sample id {sample_id}', 'blue'))
+#     print(f'count shape {rna_sample.counts.shape}')
+#     print(f'number of cells {rna_sample.number_of_cells}')
+#     print(f'number of genes {rna_sample.number_of_genes}')
+#     return rna_sample
 
 
 if __name__ == '__main__':
-    samples = [subfolder for subfolder in os.listdir(ROW_SAMPLES_PATH)]
+    samples = [subfolder.replace(".pkl", "") for subfolder in os.listdir(ROW_SAMPLES_PATH) if (not 'csv' in subfolder and not 'xlsx' in subfolder)]
     create_folder(OUTPUT_PATH)
 
     summary_df = pd.DataFrame(columns=['sample',
@@ -65,9 +66,11 @@ if __name__ == '__main__':
                                        'p_tumor',
                                        'n_stromal',
                                        'p_stromal'])
-    for sample_id in [s for s in samples if (not 'csv' in s and not 'xlsx' in s)]:
+    for sample_id in samples:
+        print(f'Working on {sample_id}')
         # Extracts one of the samples from PC
-        rna_sample = extract_sample(sample_id)
+        rna_sample = loading_sample(row_data_path=join(ROW_SAMPLES_PATH, f'{sample_id}.pkl'),
+                                    cells_information_path=join(SAMPLES_INFORMATION_PATH, f'{sample_id}.pkl'))
         n_droplets = rna_sample.number_of_cells
 
         # remove dying cells and garbage.
