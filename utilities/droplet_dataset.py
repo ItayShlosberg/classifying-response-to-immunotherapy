@@ -8,6 +8,7 @@ import numpy as np
 import pickle
 from DL.Mars_seq_DL.data_loading import *
 import pandas as pd
+import time
 CELL_TYPE_LIST = ['T cells', 'CD4 helper T cells', 'CD8 Cytotoxic T cells', 'Regulatory T cells', 'Regulatory CD4 T cells', 'Regulatory CD8 T cells', 'Regulatory CD4_CD8 T cells', 'NKT cells', 'NK cells', 'B cells', 'Activated T cells', 'Senescence T cells', 'Terminal effector', 'Exhausted T cells', 'Stem_like T cells', 'Memory T cells', 'Memory CD4 T cells', 'Memory CD8 T cells', 'Memory CD4_CD8 T cells', 'Macrophage_immature', 'Macrophage_mature', 'Monocyte_immature', 'Monocyte_mature', 'cDCs_dendritic_cells', 'pDCs', 'myeloid cells_general_immature', 'myeloid cells_general_mature', 'Neutrophils', 'Granolocytes', 'Immune_general']
 
 
@@ -32,33 +33,36 @@ def normalize_data(counts):
     return normalized_cells
 
 
-def build_cohort_gene_list(samples_path):
-    samples = [subfolder for subfolder in os.listdir(samples_path) if not 'csv' in subfolder]
+def build_cohort_gene_list(samples_information_path, save_path=None):
+
+    samples = [subfolder for subfolder in os.listdir(samples_information_path) if not 'csv' in subfolder]
 
     gene_ids = []
     # loop over all samples and add each of them into the cohort.
-    for sample in samples:
+    for sample_id in samples:
         # retrieve sample from PC
-        rna_sample = extract_droplet_data_from_pickle(join(samples_path, sample))
-        gene_ids += list(zip(rna_sample.features, rna_sample.gene_names))
+        sample_information = pickle.load(open(join(samples_information_path, sample_id), 'rb'))
+        features = sample_information[2]
+        gene_names = sample_information[3]
+        gene_ids += list(zip(features, gene_names))
 
     gene_ids = sorted(list(set(gene_ids)), key=lambda x: x[0])
+
+    if save_path:
+        print(f"Saving gene list in {save_path}")
+        pickle.dump(gene_ids, open(save_path, 'wb'))
+
     return gene_ids
 
 
-def build_cohort(samples_path, gene_path=None, save_path=None):
-    # build cohort gene list in needed.
-    if gene_path:
-        print(f"Loading gene list from {gene_path}")
-        gene_id_list = pickle.load(open(gene_path, 'rb'))
-    else:
-        print("Building gene list of all samples")
-        gene_id_list = build_cohort_gene_list(samples_path)
-        if save_path:
-            print(f"Saving gene list in {save_path}")
-            pickle.dump(gene_id_list, open(save_path, 'wb'))
+def build_cohort(samples_row_data_path, samples_cells_information_path, gene_id_list):
 
-    samples = [subfolder for subfolder in os.listdir(samples_path) if not 'csv' in subfolder]
+    row_samples = [subfolder.replace(".pkl", "") for subfolder in os.listdir(samples_row_data_path) if not 'csv' in subfolder]
+    information_samples = [subfolder.replace(".pkl", "") for subfolder in os.listdir(samples_cells_information_path) if not 'csv' in subfolder]
+    # Check compatibility of row data with meta data
+    if not are_the_lists_identical(row_samples, information_samples):
+        raise Exception("Paths are incompatible")
+
     accumulative_counting_table = None
     cohort_gene_names = [gg[1] for gg in gene_id_list]
     cohort_gene_features = [gg[0] for gg in gene_id_list]
@@ -66,43 +70,59 @@ def build_cohort(samples_path, gene_path=None, save_path=None):
     cohort_mapping_samples = []
     cohort_cells_information = Cell_Inf_List()
     # loop over all samples and add each of them into the cohort.
-    for sample in samples:
-        print(f"Working on {sample}")
+    for idx, sample_id in enumerate(sorted(row_samples)):
+
+        print(f"\nWorking on {sample_id}, {idx+1}/{len(row_samples)}")
+        start_time = time.time()
         # retrieve sample from PC ###
-        rna_sample = extract_droplet_data_from_pickle(join(samples_path, sample))
+        rna_sample = loading_sample(row_data_path=join(samples_row_data_path, f'{sample_id}.pkl'),
+                                    cells_information_path=join(samples_cells_information_path, f'{sample_id}.pkl'))
+        print(f'Loading sample time: {time.strftime("%H:%M:%S", time.gmtime(time.time()-start_time))}')
 
         ### Remove garbage cells ###
-        rna_sample = rna_sample[[not should_be_removed for should_be_removed
-                                 in rna_sample.cells_information.getattr('should_be_removed')]]
+        print('Clean data')
+        rna_sample = rna_sample.filter_cells_by_property('should_be_removed', False)
+
+        ### Remove garbage cells ###
+        print("Normalize Data")
+        start_time = time.time()
+        rna_sample.normalize_data()
+        print(f'Normalizing sample time: {time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time))}')
 
         sample_number_of_cells = rna_sample.number_of_cells
 
         ### fill cohort barcodes and mapping_samples ###
         cohort_barcodes += rna_sample.barcodes
-        cohort_mapping_samples += [sample.replace('.pkl', '')]*sample_number_of_cells
+        cohort_mapping_samples += [sample_id]*sample_number_of_cells
         cohort_cells_information = cohort_cells_information + rna_sample.cells_information
 
         ### gene alignment ###
-        # take the corresponding indices of sample gene in cohort_gene_features
+        print("Align sample")
+        start_time = time.time()
+        # take the corresponding indices of sample_id gene in cohort_gene_features
         cohort_gene_indices = [cohort_gene_features.index(g_id) for g_id in rna_sample.features]
         # build an array with zeros
         aligned_counting_table = np.zeros((sample_number_of_cells, len(gene_id_list)))
         # fill 'aligned counting table' using cohort_gene_indices
         aligned_counting_table[:, cohort_gene_indices] = rna_sample.counts
+        print(f'Alignment sample time: {time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time))}')
 
 
-        # add current aligned sample into accumulative counting table
+        ### add current aligned sample into accumulative counting table ###
+        print("Add current aligned sample into accumulative counting table")
+        start_time = time.time()
         if accumulative_counting_table is not None:
             accumulative_counting_table = np.concatenate((accumulative_counting_table, aligned_counting_table))
         else:
             accumulative_counting_table = aligned_counting_table
+        print(f'Concatenate time: {time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time))}')
+
 
         del aligned_counting_table
         del rna_sample
         del cohort_gene_indices
 
-    print("Normalize Data")
-    accumulative_counting_table = normalize_data(accumulative_counting_table)
+
     cohort = Cohort_RNAseq(counts=accumulative_counting_table,
                           gene_names=cohort_gene_names,
                           barcodes=cohort_barcodes,
@@ -201,6 +221,7 @@ class Cohort_RNAseq:
             self.counts = filtered_cells
             self.gene_names = filtered_genes
             self.features = filterd_features
+            self.number_of_genes = len(self.gene_names)
             print(f"Dataset was cleared from genes with variance of less than {variance}")
 
         return Cohort_RNAseq(counts=filtered_cells,
@@ -279,6 +300,48 @@ class Cohort_RNAseq:
                              self.samples + other.samples,
                              self.cells_information + other.cells_information)
 
+    def get_cancer_immune_stroma_map(self):
+        """
+        :return: bool and str lists according to the cell information object
+        """
+        is_stroma = self.cells_information.getattr('is_stromal')
+        is_cancer = self.cells_information.getattr('is_cancer')
+        is_immune = self.cells_information.getattr('is_immune')
+
+        map = [0] * self.number_of_cells
+        map_str = ['Nothing'] * self.number_of_cells
+        for i in range(self.number_of_cells):
+            if is_immune[i]:
+                map[i] = 1
+                map_str[i] = 'is_immune'
+            if is_cancer[i]:
+                map[i] = 2
+                map_str[i] = 'is_cancer'
+            if is_stroma[i]:
+                map[i] = 3
+                map_str[i] = 'is_stroma'
+        return map, map_str
+
+    def get_myeloid_lymphoid_map(self):
+        """
+        :return: bool and str lists according to the cell information object
+        """
+        is_myeloid = self.cells_information.getattr('is_myeloid')
+        is_lymphoid = self.cells_information.getattr('is_lymphoid')
+        map = [0] * self.number_of_cells
+        map_str = ['Nothing'] * self.number_of_cells
+        for i in range(self.number_of_cells):
+            if is_myeloid[i]:
+                map[i] = 1
+                map_str[i] = 'myeloid'
+            if is_lymphoid[i]:
+                map[i] = 2
+                map_str[i] = 'lymphoid'
+            if is_myeloid[i] and is_lymphoid[i]:
+                map[i] = 3
+                map_str[i] = 'Both'
+        return map, map_str
+
 
 class RNAseq_Sample:
 
@@ -323,6 +386,7 @@ class RNAseq_Sample:
             self.counts = filtered_cells
             self.gene_names = filtered_genes
             self.features = filter_features
+            self.number_of_genes = len(self.gene_names)
             print(f"Dataset was cleared from genes with variance of less than {variance}")
         return RNAseq_Sample(filtered_cells,
                              filtered_genes,
@@ -398,7 +462,7 @@ class RNAseq_Sample:
 
     def get_statistics(self):
         """
-        :return: statistics DFs, one of cancer&immune&stroma and one of all immune cell-types.
+        :return: statistics DFs, one DF of cancer&immune&stroma and one DF of all immune cell-types.
         """
         n_cells = self.number_of_cells
         n_cancer = sum(self.cells_information.getattr('is_cancer'))
@@ -441,6 +505,48 @@ class RNAseq_Sample:
                      self.barcodes,
                      self.features,
                      self.gene_names), open(path, 'wb'))
+
+    def get_cancer_immune_stroma_map(self):
+        """
+        :return: bool and str lists according to the cell information object
+        """
+        is_stroma = self.cells_information.getattr('is_stromal')
+        is_cancer = self.cells_information.getattr('is_cancer')
+        is_immune = self.cells_information.getattr('is_immune')
+
+        map = [0] * self.number_of_cells
+        map_str = ['Nothing'] * self.number_of_cells
+        for i in range(self.number_of_cells):
+            if is_immune[i]:
+                map[i] = 1
+                map_str[i] = 'is_immune'
+            if is_cancer[i]:
+                map[i] = 2
+                map_str[i] = 'is_cancer'
+            if is_stroma[i]:
+                map[i] = 3
+                map_str[i] = 'is_stroma'
+        return map, map_str
+
+    def get_myeloid_lymphoid_map(self):
+        """
+        :return: bool and str lists according to the cell information object
+        """
+        is_myeloid = self.cells_information.getattr('is_myeloid')
+        is_lymphoid = self.cells_information.getattr('is_lymphoid')
+        map = [0] * self.number_of_cells
+        map_str = ['Nothing'] * self.number_of_cells
+        for i in range(self.number_of_cells):
+            if is_myeloid[i]:
+                map[i] = 1
+                map_str[i] = 'myeloid'
+            if is_lymphoid[i]:
+                map[i] = 2
+                map_str[i] = 'lymphoid'
+            if is_myeloid[i] and is_lymphoid[i]:
+                map[i] = 3
+                map_str[i] = 'Both'
+        return map, map_str
 
 
 class Cell_Inf_List:
@@ -508,7 +614,7 @@ class Cell_Inf_List:
 class Cell_information:
     def __init__(self):
         """
-        cell_type_list - list of all immune cell-types the cell is associated with, final decision after
+        cell_type_list - list of all immune cell-types which the cell is associated with, final decision after
         dealing with all kinds of conflicts.
 
         conflict_related_cell_types - names of cell-types which the cell was assigned to those cell-types but there was

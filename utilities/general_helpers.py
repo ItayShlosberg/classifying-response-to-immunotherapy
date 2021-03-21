@@ -5,9 +5,10 @@ import os
 import pandas
 from collections import Counter
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+# from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import sys
 from shutil import copyfile
+
 
 def flatten_list(l):
     return [item for sublist in l for item in sublist]
@@ -29,6 +30,14 @@ def is_there_overlap_in_lists(l1 , l2):
 
 
 def are_the_lists_identical(l1, l2):
+    """
+    NOT IDENTICAL IN ORDER BUT IDENTICAL IN CONTENT.
+    :param l1:
+    :param l2:
+    :return:
+    """
+    l1 = sorted(l1)
+    l2 = sorted(l2)
     return sum([l1[ii] != l2[ii] for ii in range(len(l1))]) == 0
 
 
@@ -148,3 +157,11 @@ def indices_list_to_binary_list(lst):
 def create_folder(folder):
     if not os.path.isdir(folder):
         os.mkdir(folder)
+
+
+def get_common_indices_of_boolean_lists(*argv):
+    return [sum([not argv[jj][ii] for jj in range(len(argv))]) == 0 for ii in range(len(argv[0]))]
+
+
+def flip_sign_of_boolean_list(l1):
+    return [not aa for aa in l1]
