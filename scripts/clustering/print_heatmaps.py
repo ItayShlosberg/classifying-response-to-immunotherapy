@@ -1,3 +1,11 @@
+"""
+Print Heatmap of gene markers, after finding markers of clusters.
+Done for all Ks.
+Takes the first NUM_OF_MARKER_GENES (default is 30) gene markers with the highest log_FC.
+if there are >= NUM_OF_MARKER_GENES gene markers with pval=0 it will consider only them.
+
+"""
+
 from os.path import join
 import numpy as np
 import pandas as pd

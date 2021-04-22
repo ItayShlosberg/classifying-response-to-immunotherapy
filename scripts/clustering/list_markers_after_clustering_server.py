@@ -1,3 +1,8 @@
+"""
+After running Analyze_kmeans_clusters.py tou have the marker gene list.
+so to create csv run this script on the output of running Analyze_kmeans_clusters.py.
+"""
+
 from os.path import join
 import numpy as np
 import pandas as pd

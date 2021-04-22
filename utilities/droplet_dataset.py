@@ -19,7 +19,7 @@ def normalize_data(counts):
     scaling_factor = sum / 10,000
     For each gene_expression:
         if expression != 0:
-            normalized_gene_expression = Log2(gene_expression / scaling_factor) + 1
+            normalized_gene_expression = Log2(gene_expression / scaling_factor + 1)
         if expression = 0:
         normalized_gene_expression = 0
     :return: 1 - if normalizing succeeded, 0 - otherwise (already normalized)
@@ -55,7 +55,7 @@ def build_cohort_gene_list(samples_information_path, save_path=None):
     return gene_ids
 
 
-def build_cohort(samples_row_data_path, samples_cells_information_path, gene_id_list):
+def build_cohort(samples_row_data_path, samples_cells_information_path, gene_id_list, to_normalize=True):
 
     row_samples = [subfolder.replace(".pkl", "") for subfolder in os.listdir(samples_row_data_path) if not 'csv' in subfolder]
     information_samples = [subfolder.replace(".pkl", "") for subfolder in os.listdir(samples_cells_information_path) if not 'csv' in subfolder]
@@ -84,10 +84,11 @@ def build_cohort(samples_row_data_path, samples_cells_information_path, gene_id_
         rna_sample = rna_sample.filter_cells_by_property('should_be_removed', False)
 
         ### Remove garbage cells ###
-        print("Normalize Data")
-        start_time = time.time()
-        rna_sample.normalize_data()
-        print(f'Normalizing sample time: {time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time))}')
+        if to_normalize:
+            print("Normalize Data")
+            start_time = time.time()
+            rna_sample.normalize_data()
+            print(f'Normalizing sample time: {time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time))}')
 
         sample_number_of_cells = rna_sample.number_of_cells
 
@@ -436,14 +437,13 @@ class RNAseq_Sample:
 
     def normalize_data(self):
         """
-        TODO: validate with Keren that 100K is ok. since using 10K leads to zero values
         in_place function.
         Will normalize each ***CELL*** separately:
         sum = sum(Cell) # sum up all reads in cell of all genes.
         scaling_factor = sum / 10,000
         For each gene_expression:
             if expression != 0:
-                normalized_gene_expression = Log2(gene_expression / scaling_factor) + 1
+                normalized_gene_expression = Log2(gene_expression / scaling_factor + 1)
             if expression = 0:
             normalized_gene_expression = 0
         :return: 1 - if normalizing succeeded, 0 - otherwise (already normalized)

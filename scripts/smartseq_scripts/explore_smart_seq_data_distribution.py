@@ -20,8 +20,8 @@ from DL.Mars_seq_DL.data_loading import *
 from utilities.general_helpers  import *
 # PICKLE_PATH = r'DATA\1-16291cells.p'
 PICKLE_PATH = r'D:\Technion studies\Keren Laboratory\Data\smart_seq\SmartSeq_RNAseq_DATA.p'
-CHECKPOINT_TSNE_PATH = r'DATA\TSNE_Embedded_1-16291cells_randInt21'  # comes into play as import OR export path.
-TSNE_IMPORT_EXPORT = False  # FALSE - Import, TRUE - EXPORT
+CHECKPOINT_TSNE_PATH = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\temporal garbage\TSNE_Embedded_correlation.pkl'  # comes into play as import OR export path.
+TSNE_IMPORT_EXPORT = True  # FALSE - Import, TRUE - EXPORT
 
 
 
@@ -49,7 +49,7 @@ def TSNE_embedded(cells):
     :return: embedded 2D-representation .
     """
     if TSNE_IMPORT_EXPORT:  # perform TSNE and save embedded vector in CHECKPOINT_TSNE_PATH
-        cells_embedded = TSNE(n_components=2, random_state=21).fit_transform(cells)
+        cells_embedded = TSNE(n_components=2, perplexity=30.0, metric="correlation", random_state=21).fit_transform(cells)
         cells_embedded = cells_embedded.T.tolist()
         pickle.dump(cells_embedded, open(CHECKPOINT_TSNE_PATH, "wb"))
     else:
@@ -71,18 +71,18 @@ def visualize(cells, clusters_labels, title=None, centroids=None):
 
     # plt.plot(X, Y, 'ro')
 
-    colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w', 'lime', 'lavender', 'darkred', 'olive']
-    for cluster in np.unique(clusters_labels):
+    colors = ['r', 'g', 'b', 'c', 'm', 'y', 'k', 'w', 'orange', 'purple',  'lime', 'lavender', 'darkred', 'olive']
+    for cluster, c in zip(np.unique(clusters_labels), colors):
         Xi = [X[i] for i in range(len(clusters_labels)) if clusters_labels[i] == cluster]
         Yi = [Y[i] for i in range(len(clusters_labels)) if clusters_labels[i] == cluster]
-        color = colors[cluster]
-        plt.plot(Xi, Yi, 'ro', color=color)
-    if centroids:
-        for centroid in centroids:
-            plt.plot(centroid[0], centroid[1], 'ro', color='y')
+        plt.plot(Xi, Yi, 'ro', color=c, label=cluster)
+    # if centroids:
+    #     for centroid in centroids:
+    #         plt.plot(centroid[0], centroid[1], 'ro', color='y')
     # plt.plot([1, 2], [1, 4], 'ro')
     # plt.plot([3, 4], [9, 16], 'ro', color='green')
     plt.title(title)
+    plt.legend()
     plt.show()
 
 
@@ -277,14 +277,15 @@ if __name__ == '__main__':
     """
     cells, gene_names, patients_information = extract_smart_seq_data_from_pickle(PICKLE_PATH)
 
-    main(cells, gene_names, patients_information)
+    # main(cells, gene_names, patients_information)
     # cells, patients_information = filter_cells_by_supervised_classification(cells, patients_information)
     # expression_of_genes(cells, patients_information, gene_names)
     # It has to be decided the order of actions of tSNE and k-means.
-    # embedded_cells = TSNE_embedded(cells)
+    keren_clusters = [p['general 11 cluster'] for p in patients_information]
+    embedded_cells = TSNE_embedded(cells[:, 6<np.var(cells, axis=0)])
     # cells = np.array(embedded_cells).T    # in order to perform cluster on embedded points.
 
-    # keren_clusters = [p['keren cluster'] for p in patients_information]
+
     # response_labels = [p['response label'] for p in patients_information]
     # kmeans_clusters = cluster(cells, 2)
     #
@@ -298,7 +299,7 @@ if __name__ == '__main__':
     #
     #
     # some_correlation_function(patients_information, response_labels, clusterid)
-    # visualize(embedded_cells, keren_clusters, 'keren_clusters')
+    visualize(embedded_cells, keren_clusters, 'correlation')
     # visualize(embedded_cells, response_labels, 'response_labels')
     # print(build_confusion_matrix(keren_clusters, clusterid))
 

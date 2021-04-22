@@ -28,7 +28,7 @@ from utilities.droplet_dataset import loading_sample
 
 ROW_DATA_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/ROW_DATA'
 CELL_INFORMATION_PATH = r'/storage/md_keren/shitay/Data/inferCNV_data/update_runs/4.3.21'
-OUTPUT = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/cohort.pkl'
+OUTPUT = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/non_normalized/cohort_non_normalized.pkl'
 
 # CELL_INFORMATION_PATH = r'C:\Users\itay\Desktop\test\cells_information'
 # ROW_DATA_PATH = r'C:\Users\itay\Desktop\test\row_data'
@@ -36,6 +36,6 @@ OUTPUT = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/cohort.pkl'
 
 gene_ids = build_cohort_gene_list(CELL_INFORMATION_PATH)
 
-cohort = build_cohort(ROW_DATA_PATH, CELL_INFORMATION_PATH, gene_ids)
+cohort = build_cohort(ROW_DATA_PATH, CELL_INFORMATION_PATH, gene_ids, to_normalize=False)
 pickle.dump((cohort), open(OUTPUT, 'wb'), protocol=4)#
 
