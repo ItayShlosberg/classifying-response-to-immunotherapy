@@ -82,7 +82,7 @@ def visualize(cells, clusters_labels, title=None, centroids=None):
 if __name__ == '__main__':
 
 
-    step = 1
+    step = 3
 
 
     PCs_path = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\temporal garbage\TSNE_smartseq\pcs_scaled.pkl'
@@ -91,7 +91,7 @@ if __name__ == '__main__':
 
 
     if step > 0:
-        cells_filtered, clusters =  pickle.load(open(cells_filtered_path, 'rb'))
+        cells_filtered, clusters = pickle.load(open(cells_filtered_path, 'rb'))
     else:
         cells, gene_names, patients_information = extract_smart_seq_data_from_pickle(PICKLE_PATH)
         clusters = [p['general 11 cluster'] for p in patients_information]
@@ -106,7 +106,7 @@ if __name__ == '__main__':
         pickle.dump((PCs), open(PCs_path, 'wb'))
 
     if step > 2:
-        tsne_results =  pickle.load(open(TSNE_path, 'rb'))
+        tsne_results = pickle.load(open(TSNE_path, 'rb'))
     else:
         tsne_results = tsne(PCs)
         pickle.dump((tsne_results), open(TSNE_path, 'wb'))

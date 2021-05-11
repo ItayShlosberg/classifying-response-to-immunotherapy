@@ -1,7 +1,16 @@
 """
-After drawing conclusion with inferCNV and  classifying tumor cells and immune cells using the CNV maps
-run this script to update the data and save a version of PKL of the data with the conclusion.
+After drawing conclusion with inferCNV and classifying tumor cells and immune cells using the CNV maps
+run this script to update the data and save a version of PKL of the data with the conclusions.
 
+
+
+This is the last step in QC and as such, we update here other properties:
+- We mark for removal: Dying cells (found to be in apoptosis).
+- We mark for removal: doublets (classified by Scrublet).
+Update 6.5.21:
+- We mark for removal: immune cells having myeloid & lymphoid conflicts.
+- We mark for removal: we decided to remove all tumor cells with conflicts even those which have CNVs patterns.
+TODO: - specify in cells_information whether a cell was removed in CellBender.
 
 ---------------------------------------------
 For tumor and not immune cells (the lower-side of the cnv map):
@@ -47,6 +56,10 @@ from utilities.general_helpers import *
 from termcolor import colored
 from utilities.droplet_dataset import loading_sample
 
+# In that path all pkl of the updated properties will be saved.
+# OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\update_runs\21.2.21'
+OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\update_runs\10.5.21'
+
 # path for samples which will be used to update. Important: taking the last-updated scrublet output. (after all other QC processes).
 ROW_SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\Data\droplet_seq\ROW_DATA'
 SAMPLES_INFORMATION_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\scrublet\4.3.21'
@@ -54,14 +67,19 @@ SAMPLES_INFORMATION_PATH = fr'D:\Technion studies\Keren Laboratory\python_playgr
 INFERCNV_SAMPLES_PATH = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\executions\all_data_31.12.20'
 # path of folder where all samples having cell needed be removed have PKL file containing all barcodes of the cell needed be removed.
 IMMUNE_CELLS_REMOVAL_PATH = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\analysis_conclusions\immune_clustering'
-# In that path all pkl of the updated properties will be saved.
-# OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\update_runs\21.2.21'
-OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\update_runs\4.3.21'
+
 # Tumor table contains row for each sample splioting the tumor cells (Not immune cells) into cluster ##sorted by InferCNV output##
 TUMOR_TABLE_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\analysis_conclusions\tumor_classifying_clusters.xlsx'
 # Immune table contains row for each sample that have processed, if there are cells needed to be removed it's indicated in cluster-type.
 IMMUNE_TABLE_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\analysis_conclusions\immune_classifying_clusters.xlsx'
+# CellBender csv, barcodes of empty cells. should be marked as cellbender empty
+EMPTY_BARCODES_PATH = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\CellBender\empty_droplets_barcodes_v2.csv'
 
+# Potential contaminated cells, we need to remove these cells from the immune compartment and move them to the stroma
+# one, as they could definitely be related to this phenomenon where fibroblast “ate” the neutrophils as this is a common
+# feature of removing dying cells.
+# CONTAMINATED_FIBROBLAST_CELLS_PATH = r'/storage/md_keren/shitay/Data/tables/stroma_contaminated_cells_kmeans_k11_cluster7_expressing_neut.csv'
+CONTAMINATED_FIBROBLAST_CELLS_PATH = r'D:\Technion studies\Keren Laboratory\Data\tables\stroma_contaminated_cells_kmeans_k11_cluster7_expressing_neut.csv'
 
 def extract_sample(sample_id):
     """
@@ -133,7 +151,7 @@ def update_tumor_cells(sample , tumor_clusters, tumor_barcodes_order):
     Tumor cluster types:
     0	stromal cells - conflicts will be classified as stromal, cancer cells remain cancer
     1	stromal cells - conflicts will be removed, cancer cells remain cancer
-    2	tumor - conflicts will be classified as tumor
+    2	tumor - conflicts will be classified as tumor (originally, now (6.5.21 we always remove cancer&immune conflict cells)
     3	tumor - conflicts will be classified as stromal	otherwise become tumor
     4	tumor - conflicts will be removed, otherwise become tumor
     5	remove all - suspected to be doublets (in apoptosis case may be in use)
@@ -150,24 +168,32 @@ def update_tumor_cells(sample , tumor_clusters, tumor_barcodes_order):
         bool_is_cancer_indices = cluster.cells_information.getattr('is_cancer')
         bool_is_conflict_indices = cluster.cells_information.getattr('cancer_immune_conflict')
         bool_is_apoptosis = cluster.cells_information.getattr('is_apoptosis')
-
+        # 1	stromal cells - conflicts will be removed, cancer cells remain cancer
         if cluster_type == 1:
             # stromal cells are those which are not cancer and don't have conflicts.
             bool_stromal_indices = [not bool_is_cancer_indices[ii] and not bool_is_conflict_indices[ii] for ii
                                     in range(len(bool_is_cancer_indices))]
             stromal_cells_RNAseq = cluster[bool_stromal_indices]
             stromal_cells_RNAseq.cells_information.setattr('is_stromal', None, True)
-
-        elif cluster_type == 2:
-            bool_not_apoptosis_indices = [not val for val in bool_is_apoptosis]
-            moving_to_be_cancer_cells = cluster[bool_not_apoptosis_indices]
-            moving_to_be_cancer_cells.cells_information.setattr('is_cancer', None, True)
-
-        elif cluster_type == 4:
+        # 2 and 4	tumor - conflicts will be removed, otherwise become tumor
+        elif cluster_type == 4 or cluster_type == 2:
             moving_to_be_cancer_cells_indices = [not bool_is_apoptosis[ii] and not bool_is_conflict_indices[ii] for ii
                                     in range(len(bool_is_apoptosis))]
             moving_to_be_cancer_cells = cluster[moving_to_be_cancer_cells_indices]
             moving_to_be_cancer_cells.cells_information.setattr('is_cancer', None, True)
+        # Previous version (start-5.5.21) where we split 2 and 4 to 2 different cases and kept some cancer&immune-conflict cells that
+        # carry CNVs patterns.
+        # # 2	tumor - conflicts will be classified as tumor
+        # elif cluster_type == 2:
+        #     bool_not_apoptosis_indices = [not val for val in bool_is_apoptosis]
+        #     moving_to_be_cancer_cells = cluster[bool_not_apoptosis_indices]
+        #     moving_to_be_cancer_cells.cells_information.setattr('is_cancer', None, True)
+        # # 4	tumor - conflicts will be removed, otherwise become tumor
+        # elif cluster_type == 4:
+        #     moving_to_be_cancer_cells_indices = [not bool_is_apoptosis[ii] and not bool_is_conflict_indices[ii] for ii
+        #                             in range(len(bool_is_apoptosis))]
+        #     moving_to_be_cancer_cells = cluster[moving_to_be_cancer_cells_indices]
+        #     moving_to_be_cancer_cells.cells_information.setattr('is_cancer', None, True)
 
         else:
             print(colored(f"There is use in cluster type: {cluster_type}, end there is no reference"))
@@ -206,10 +232,11 @@ def update_immune_cells(sample_id, rna_sample, immune_df):
 
 
 def go_over_all_samples(tumor_df, immune_df):
-    samples = [ss.replace(".pkl", "") for ss in os.listdir(SAMPLES_INFORMATION_PATH)]
+    samples = [ss.replace(".pkl", "") for ss in os.listdir(SAMPLES_INFORMATION_PATH) if (not 'csv' in ss and not 'xlsx' in ss)]
     create_folder(OUTPUT_PATH)
-    for sample_id in [s for s in samples if (not 'csv' in s and not 'xlsx' in s)]:
-        # Extracts one of the samples from PC
+    for iter_idx, sample_id in enumerate(samples):
+        print(f'{sample_id};\t{iter_idx+1}/{len(samples)}')
+        # Extracts a single sample from PC
         rna_sample = loading_sample(row_data_path=join(ROW_SAMPLES_PATH, f'{sample_id}.pkl'),
                                     cells_information_path=join(SAMPLES_INFORMATION_PATH, f'{sample_id}.pkl'))
         rna_sample.cells_information.setattr('should_be_removed', None, False)
@@ -231,6 +258,33 @@ def go_over_all_samples(tumor_df, immune_df):
         doublets_indices = rna_sample.cells_information.getattr('is_doublet')
         if (sum(doublets_indices)/rna_sample.number_of_cells) < 0.1:
             rna_sample[doublets_indices].cells_information.setattr('should_be_removed', None, True)
+
+        # (6.5.21) removes also all cells with lymphoid # myeloid markers conflicts.
+        mye = np.array(rna_sample.cells_information.getattr('is_myeloid'))
+        lym = np.array(rna_sample.cells_information.getattr('is_lymphoid'))
+        cells_for_removal = rna_sample[lym & mye]
+        cells_for_removal.cells_information.setattr('should_be_removed', None, True)
+        comment = f'myeloid & lymphoid conflict'
+        cells_for_removal.cells_information.setattr('comment', None, comment)
+
+        # mark empty cells (by CellBender definition)
+        empty_barcodes_df = pd.read_csv(EMPTY_BARCODES_PATH)
+        empty_cells_barcodes_list = list(empty_barcodes_df[empty_barcodes_df['sample'] == sample_id]['barcode'])
+        rna_sample.get_subset_by_barcodes(empty_cells_barcodes_list).cells_information.setattr('is_CelBender_empty', None, True)
+
+        # Potential contaminated cells, we need to remove these cells from the immune compartment and move them to
+        # the stroma one, as they could definitely be related to this phenomenon where fibroblast “ate” the neutrophils
+        # as this is a common feature of removing dying cells.
+        contaminated_fib_cells_df = pd.read_csv(CONTAMINATED_FIBROBLAST_CELLS_PATH)
+        contaminated_fib_cells_list = list(contaminated_fib_cells_df[contaminated_fib_cells_df['sample'] == sample_id]['barcode'])
+        rna_sample.get_subset_by_barcodes(contaminated_fib_cells_list).cells_information.setattr('is_immune',
+                                                                                                 None, False)
+        rna_sample.get_subset_by_barcodes(contaminated_fib_cells_list).cells_information.setattr('is_stromal',
+                                                                                                 None, True)
+        contaminated_comment = f'Found as a potential contaminated cell in kmeans k=11, cluster 7 expressing neut markers'
+        rna_sample.get_subset_by_barcodes(contaminated_fib_cells_list).cells_information.setattr('comment',
+                                                                                                 None, contaminated_comment)
+
 
         # Save an updated version of current sample_id with inferCNV changes.
         # pickle.dump((rna_sample), open(join(OUTPUT_PATH, f'{sample_id}.pkl'), 'wb'))

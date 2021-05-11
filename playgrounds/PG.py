@@ -20,7 +20,7 @@ import os
 from os.path import join
 from DL.Mars_seq_DL.data_loading import *
 from utilities.droplet_dataset import *
-from scripts.clustering.Clustering_script import user_function
+from scripts.clustering.Clustering_script import pearson_distance_metric
 
 
 # SAMPLES = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\update_runs\21.2.21'

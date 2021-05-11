@@ -25,23 +25,27 @@ sys.path.append(lib5)
 import pickle
 import numpy as np
 
+# You should put a path of non_normalize cohort with immune and tumor cells without variance filter.
+COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/non_normalized/5.21/cohort_non_normalized_10.5.21.pkl'
 
+OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/cNMF/conversions/tumor_filtered_cNMF_10.5.21.txt'
+CONVERT_TUMOR = True     # False for immune
 
-
-COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/non_normalized/cohort_non_normalized.pkl'
-OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/cNMF/conversions/immune_filtered_cNMF.txt'
 
 if __name__ == '__main__':
 
-
-
+    print(f'Starting data conversion for cNMF')
     cohort = pickle.load(open(COHORT_PATH, 'rb'))
-
-    # cohort = cohort.filter_cells_by_property('is_immune', True)
-    cohort = cohort.filter_cells_by_property('is_immune', True)
+    print(f'{COHORT_PATH} file has been loaded')
+    if CONVERT_TUMOR:
+        cohort = cohort.filter_cells_by_property('is_cancer', True)
+        print(f'tumor cells only')
+    else:
+        cohort = cohort.filter_cells_by_property('is_immune', True)
+        print(f'immune cells only')
 
     counts = cohort.counts
-    cell_ids = cohort.barcodes
+    cell_ids = [f'_'.join(v) for v in list(zip(cohort.samples, cohort.barcodes))]
     gene_ids = cohort.features
     gene_names = cohort.gene_names
 
@@ -52,7 +56,7 @@ if __name__ == '__main__':
     values = counts[:, gene_indices]
     print(values.shape)
 
-
+    print(f'Saving output in {OUTPUT_PATH}')
     # build file and save it
     with open(OUTPUT_PATH, 'w') as writer:
 

@@ -47,10 +47,10 @@ from utilities.general_helpers import create_folder
 
 
 
-OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/markers/21.3.21'
+OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/markers/27.4.21'
 FILTERED_CELLS_PATH = fr'/storage/md_keren/shitay/outputs/variance_filtered/immune_cells_var0.315.pkl'
-KMEANS_DIR_PATH = r'/storage/md_keren/shitay/outputs/clustering/kmeans/row_kmeans'
-CLUSTERING_ANALYSIS_PATH = fr'/storage/md_keren/shitay/outputs/clustering/cluster_analysis/cluster_analysis_21.3.21'
+# KMEANS_DIR_PATH = r'/storage/md_keren/shitay/outputs/clustering/kmeans/row_kmeans'
+CLUSTERING_ANALYSIS_PATH = fr'/storage/md_keren/shitay/outputs/clustering/cluster_analysis/cluster_analysis_16.4.21'
 
 if __name__ == '__main__':
 
@@ -63,8 +63,8 @@ if __name__ == '__main__':
         cluster_dir = join(OUTPUT_PATH, f'markers_cluster_{K}')
         create_folder(cluster_dir)
         print(f"Current K = {K}")
-        kmeans_clusters_path = join(KMEANS_DIR_PATH, fr'kmeans_immune_cells_var0.315_k_{K}.pkl')
-        clusters_indices = pickle.load(open(kmeans_clusters_path, 'rb'))['clusters']
+        # kmeans_clusters_path = join(KMEANS_DIR_PATH, fr'kmeans_immune_cells_var0.315_k_{K}.pkl')
+        # clusters_indices = pickle.load(open(kmeans_clusters_path, 'rb'))['clusters']
         # clusters_indices
         clustering_analysis = pickle.load(open(join(CLUSTERING_ANALYSIS_PATH, f'cluster_analysis_k_{K}.pkl'), 'rb'))
 
@@ -86,3 +86,27 @@ if __name__ == '__main__':
             df = pd.DataFrame(aa, columns=['gene', 'pval adj', 'logFC'])
             df.to_csv(join(cluster_dir, f'markers_cluster_{cls_idx+1}.csv'), index=False)
 
+
+    #  5.4.21; create new format of fd using only one csv file and saves it in the main OUTPUT directory
+    # sheet (tab) for every K solution and column for each cluster
+    writer_path = join(OUTPUT_PATH, 'markers_all_solutions.xlsx')
+    writer = pd.ExcelWriter(writer_path, engine='xlsxwriter')
+    for K_dir in sorted(os.listdir(OUTPUT_PATH)):
+        working_dir = join(OUTPUT_PATH, K_dir)
+        K = K_dir.split('_')[-1]
+        print(K)
+
+        new_table = {}
+        for cluster_marker_list in sorted(os.listdir(working_dir)):
+            cluster_idx = cluster_marker_list.split('_')[-1].replace('.csv', '')
+            print(cluster_marker_list)
+            df = pd.read_csv(join(working_dir, cluster_marker_list))
+            new_table[int(cluster_idx)] = list(df.gene)[:100]
+            if len(new_table[int(cluster_idx)]) < 100:
+                new_table[int(cluster_idx)] = new_table[int(cluster_idx)] + [None] * (
+                            100 - len(new_table[int(cluster_idx)]))
+        print([len(vv) for vv in list(new_table.values())])
+        new_sheet = pd.DataFrame(new_table)
+        new_sheet = new_sheet.reindex(sorted(new_sheet.columns), axis=1)
+        new_sheet.to_excel(writer, sheet_name=K, index=False)
+    writer.save()

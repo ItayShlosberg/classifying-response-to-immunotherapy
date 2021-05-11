@@ -28,32 +28,40 @@ from scipy.stats import pearsonr
 
 
 # COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/cohort.pkl'
-INPUT_PATH = r'/storage/md_keren/shitay/outputs/variance_filtered/immune_cells_var0.315.pkl'
-OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/kmeans/'
+# INPUT_PATH = r'/storage/md_keren/shitay/outputs/variance_filtered/immune_cells_var0.315.pkl'
+INPUT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/normalized/5.21/immune_cells_4k_genes.pkl'
+OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/kmeans/10.5.21'
+FILE_NAME = r'kmeans_immune_cells_4k_genes'
 
 
-def user_function(point1, point2):
+def pearson_distance_metric(point1, point2):
     return 1 - pearsonr(point1, point2)[0]
 
 
 if __name__ == '__main__':
 
     K = int(sys.argv[1])
+    create_folder(OUTPUT_PATH)
+
+    # Loads cohort
+    print(f'Loading cohort from:\n{INPUT_PATH}')
+    cohort = pickle.load(open(INPUT_PATH, 'rb'))
+    sample = cohort.counts
+
     print(f'Running kmeans on {INPUT_PATH}, with K = {K}')
-
-    metric = distance_metric(type_metric.USER_DEFINED, func=user_function)
-
-    immune_cells_var0315 = pickle.load(open(INPUT_PATH, 'rb'))
-    sample = immune_cells_var0315.counts
-
-
     # create K-Means algorithm with specific distance metric
+    metric = distance_metric(type_metric.USER_DEFINED, func=pearson_distance_metric)
     initial_centers = kmeans_plusplus_initializer(sample, K).initialize()
-
     kmeans_instance = kmeans(sample, initial_centers, metric=metric)
-
     # run cluster analysis and obtain results
     kmeans_instance.process()
 
-    pickle.dump((kmeans_instance), open(join(OUTPUT_PATH, fr'kmeans_immune_cells_var0.315_k_{K}.pkl'), 'wb'))
+    # Saves results
+    INSTANCES_DIRECTORY = r'kmeans_instances'
+    ROW_CLUSTERS_DIRECTORY = r'row_kmeans'
+    create_folder(join(OUTPUT_PATH, INSTANCES_DIRECTORY))
+    create_folder(join(OUTPUT_PATH, ROW_CLUSTERS_DIRECTORY))
+
+    pickle.dump((kmeans_instance), open(join(OUTPUT_PATH, INSTANCES_DIRECTORY, FILE_NAME+f'_k_{K}.pkl'), 'wb'))
+    pickle.dump({'clusters': kmeans_instance.get_clusters(), 'centers': kmeans_instance.get_centers()}, open(join(OUTPUT_PATH, ROW_CLUSTERS_DIRECTORY, FILE_NAME+f'_k_{K}.pkl'), 'wb'))
     print(f'OUTPUT was saved in {OUTPUT_PATH}')

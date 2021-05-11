@@ -48,11 +48,10 @@ from utilities.general_helpers import create_folder
 
 
 
-OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/heatmap/21.3.21_ver3'
+OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/heatmap/27.4.21'
 FILTERED_CELLS_PATH = fr'/storage/md_keren/shitay/outputs/variance_filtered/immune_cells_var0.315.pkl'
-KMEANS_DIR_PATH = r'/storage/md_keren/shitay/outputs/clustering/kmeans/row_kmeans'
-CLUSTERING_ANALYSIS_PATH = fr'/storage/md_keren/shitay/outputs/clustering/cluster_analysis/cluster_analysis_21.3.21'
-
+KMEANS_ROW_CLUSTERS_PATH = r'/storage/md_keren/shitay/outputs/clustering/kmeans/10.5.21/row_kmeans'
+KMEANS_FILE_NAME = r'kmeans_immune_cells_4k_genes'  # excluding the suffix: '_k_num.pkl'
 
 def create_cmap():
     """

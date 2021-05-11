@@ -199,7 +199,25 @@ class Cohort_RNAseq:
         if cells_information:
             self.cells_information = cells_information
 
+
+    def get_subset_by_identifiers(self, sample_list, barcodes_list):
+        """
+        On 8.5.21 we noticed that in sample the barcodes of the cells are unique, cell barcodes when looking at the
+        entire cohort the barcodes are not unique and , the sample name should also be taken into account.
+        therefore here we give an option to get a subet of the cohort by specifying the wanted barcodes and the
+        respective sample ids. the lists must be the same length, sample_list[i] is the sam[le_if of barcodes_list[i]
+        :param sample_list: list of samples id
+        :param barcodes_list:list of barcodes of cells
+        :return: a subset cohort, Cohort_RNAseq object of the cells of the given barcodes.
+        """
+        mapping = list(zip(self.samples, self.barcodes))
+        cell_idxs = [mapping.index(pair_identifier) for pair_identifier in zip(sample_list, barcodes_list)]
+
+        return self[cell_idxs]
+
     def get_subset_by_barcodes(self, barcode_list):
+        print("Warning!! You are using get_subset_by_barcodes function to filter cells in COHORT,\ncell barcodes are "
+              "not unique and when looking at the entire cohort, the sample name should also be taken into account.")
         indices = [self.barcodes.index(bb) for bb in barcode_list]
         return self[indices]
 
@@ -262,8 +280,12 @@ class Cohort_RNAseq:
                                  features=self.features,
                                  cells_information=cells_information)
 
+        if isinstance(item, np.ndarray):
+            item = item.tolist()
+            return self[item]
+
         if isinstance(item, list):
-            # identify if we are dealing with binary indexes or explicit indexes.
+            # identifies if we are dealing with binary indexes or explicit indexes.
             if sum([(ii == 0 or ii == 1) for ii in item]) == len(item):
                 # converts to explicit indexes.
                 item = [i for i in range(len(item)) if item[i]]
@@ -416,6 +438,9 @@ class RNAseq_Sample:
                                  barcodes=barcodes,
                                  features=self.features,
                                  cells_information=cells_information)
+        if isinstance(item, np.ndarray):
+            item = item.tolist()
+            return self[item]
 
         if isinstance(item, list):
             # identify if we are dealing with binary indexes or explicit indexes.
@@ -580,7 +605,7 @@ class Cell_Inf_List:
     def setattr(self, attr_name, idx_list, val):
         """
         :param attr_name:
-        :param idx_list: Numeric indexes
+        :param idx_list: Numeric indexes. if None all cells' attr_name will be set.
         :param val:
         :return:
         """
@@ -664,4 +689,5 @@ class Cell_information:
         self.is_CelBender_empty = False
         self.is_stromal = False
         self.should_be_removed = False
+        self.comment = None
 

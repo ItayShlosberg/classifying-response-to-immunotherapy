@@ -2,8 +2,8 @@
 import scipy.stats as stats
 from scipy.stats import rankdata
 from Bio.Cluster import kcluster
-from sklearn.manifold import TSNE
 import pickle
+import pandas as pd
 import numpy as np
 from utilities.general_helpers import flatten_list
 
@@ -95,56 +95,34 @@ def find_marker_genes_in_cluster(cluster_data, other_clusters_data, log_FC_thres
         p_values.append(pvalue)
 
     reject_arr, pvals_corrected = multipletests_fdr(np.array(p_values), alpha=0.05)
-    log_FC = np.log2(np.mean(cluster_data.counts, axis=0) / np.mean(other_clusters_data.counts, axis=0))
-
-
 
     # Part 2
-    mean_expression = np.mean(cluster_data.counts, axis=0)
-    significant_gene_order = np.flip(np.argsort(mean_expression))
+    percentage_voting_expression_in_clusters = np.array(percentage_voting_expression_in_clusters)
+    percentage_voting_expression_in_clusters = percentage_voting_expression_in_clusters[:,
+                                               0] / percentage_voting_expression_in_clusters[:, 1]
 
-    # sort pval by size, and adjust features/genes and percentage_voting_expression_in_clusters by the pvals' sizes.
-    pvals_corrected = pvals_corrected[significant_gene_order]
-    log_FC = log_FC[significant_gene_order]
-    percentage_voting_expression_in_clusters = np.array(percentage_voting_expression_in_clusters)[significant_gene_order]
-    features_by_significant_pval_order = np.array(cluster_data.features)[significant_gene_order]
-    gene_names_by_significant_pval_order = np.array(cluster_data.gene_names)[significant_gene_order]
-    mean_expression = mean_expression[significant_gene_order]
+    df = pd.DataFrame(np.array([p_values, pvals_corrected]).T, columns=['pval', 'corected_pval'])
+    df['log_FC'] = np.log2((np.mean(cluster_data.counts, axis=0) + 0.01) / (np.mean(other_clusters_data.counts, axis=0) + 0.01))
+    df['cluster mean_expression'] = np.mean(cluster_data.counts, axis=0)
+    df['other clusters mean expression'] = np.mean(other_clusters_data.counts, axis=0)
+    df['n_expressing_cells__cls1 > n_expressing_cells__cls2'] = percentage_voting_expression_in_clusters[:,0] > percentage_voting_expression_in_clusters[:, 1]
+    df['features'] = cluster_data.features
+    df['gene names'] = cluster_data.gene_names
 
-    # for debug usage
-    portion_ratios = (percentage_voting_expression_in_clusters[:, 0] / percentage_voting_expression_in_clusters[:, 1])
-    is_current_cluster_more_expressed = portion_ratios[:, 0] > portion_ratios[:, 1]
-    # np.concatenate((np.expand_dims(pvals_corrected, axis=0), np.expand_dims(log_FC, axis=0), np.expand_dims(aa, axis=0)), axis=0).T
-
-    # take only genes with log_FC > log_FC_threshold
-    is_current_cluster_more_expressed = is_current_cluster_more_expressed[log_FC > log_FC_threshold]
-    pvals_corrected = pvals_corrected[log_FC > log_FC_threshold]
-    percentage_voting_expression_in_clusters = percentage_voting_expression_in_clusters[log_FC > log_FC_threshold]
-    features_by_significant_pval_order = features_by_significant_pval_order[log_FC > log_FC_threshold]
-    gene_names_by_significant_pval_order = gene_names_by_significant_pval_order[log_FC > log_FC_threshold]
-    mean_expression = mean_expression[log_FC > log_FC_threshold]
-    log_FC = log_FC[log_FC > log_FC_threshold]
-
+    # sort log_FC by size, and adjust features/genes and percentage_voting_expression_in_clusters by the log_FC.
+    df = df.sort_values(['log_FC'], ascending=False)
 
     # take only genes with pval < pval_threshold
-    is_current_cluster_more_expressed = is_current_cluster_more_expressed[pvals_corrected < pval_threshold]
-    features_by_significant_pval_order = features_by_significant_pval_order[pvals_corrected < pval_threshold]
-    gene_names_by_significant_pval_order = gene_names_by_significant_pval_order[pvals_corrected < pval_threshold]
-    log_FC = log_FC[pvals_corrected < pval_threshold]
-    mean_expression = mean_expression[pvals_corrected < pval_threshold]
-    pvals_corrected = pvals_corrected[pvals_corrected < pval_threshold]
+    df = df[df['corected_pval'] < pval_threshold]
+    # take only genes with log_FC > log_FC_threshold
+    df = df[df['log_FC'] > log_FC_threshold]
+    df = df.reset_index(drop=True)
+
+    return df
 
 
 
-    return {'gene names': gene_names_by_significant_pval_order.tolist(),
-            'gene ids': features_by_significant_pval_order.tolist(),
-            'pval': pvals_corrected,
-            'log ratios': log_FC,
-            'mean expression': mean_expression.tolist()}
-
-
-
-def find_markers_in_clusters(data_rna_seq, clusters_indices, log_ratio_threshold = 0, pval_threshold=1.5):
+def find_markers_in_clusters(data_rna_seq, clusters_indices, log_ratio_threshold = 0, pval_threshold=0.05):
     """
 
     :param data_rna_seq:
@@ -156,9 +134,7 @@ def find_markers_in_clusters(data_rna_seq, clusters_indices, log_ratio_threshold
         current_cluster_indices = clusters_indices[cluster_idx]
         other_clusters_indices = [ii for ii in flatten_list(clusters_indices) if not ii in clusters_indices[cluster_idx]]
         cluster_markers = find_marker_genes_in_cluster(data_rna_seq[current_cluster_indices], data_rna_seq[other_clusters_indices], log_ratio_threshold, pval_threshold)
-        cluster_markers['cluster id'] = cluster_idx
-        cluster_markers_list.append(cluster_markers)
-
+        cluster_markers_list.append({'cluster id': cluster_idx, 'markers': cluster_markers})
     return cluster_markers_list
 
 

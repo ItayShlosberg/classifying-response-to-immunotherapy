@@ -25,16 +25,16 @@ from bhtsne import tsne
 
 
 
-OUTPUT_DIR = r'/storage/md_keren/shitay/outputs/TSNE'
-FILE_NAME = r'all_cells_bhtsne_21.4.21.pkl'
+OUTPUT_DIR = r'/storage/md_keren/shitay/outputs/TSNE/cohort_10.5.21/'
 
-### cohort should be variance filtered
-COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/normalized/cohort_var0.312.pkl'
+# in use only in 'run_bh_tsne' function
+FILE_NAME = r'tumor_cells_bhtsne_11.5.21.pkl'
+
+# cohort should be normalized and variance filtered
+COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/normalized/5.21/tumor_cells_4k_genes.pkl'
 
 
-
-if __name__ == '__main__':
-
+def run_bh_tsne():
     print("Running TSNE")
     print(f'File {COHORT_PATH}')
     # print(f'ARG {sys.argv[1]}')
@@ -52,5 +52,33 @@ if __name__ == '__main__':
 
     print(f"TSNE output size {cells_embedded.shape}")
     pickle.dump((cells_embedded), open(join(OUTPUT_DIR, FILE_NAME), 'wb'))
+
+
+def run_bh_tsne_all_perplexity():
+    PERPLEXITY = [10.0, 30.0, 50.0, 70.0, 90.0, 110.0, 130.0, 150.0]
+    # PERPLEXITY = [30.0,  90.0, 10.0, 50.0, 70.0, 110.0, 130.0, 150.0]   # order changed
+    print("run_bh_tsne_all_perplexity")
+    print(f'File {COHORT_PATH}')
+    # print(f'ARG {sys.argv[1]}')
+
+    cohort = pickle.load(open(COHORT_PATH, 'rb'))
+    # cohort = cohort.filter_cells_by_property('is_immune', True)
+    print(f"Counts shape {cohort.counts.shape}")
+
+    PCs = PCA(n_components=10).fit_transform(cohort.counts)
+
+    print(f"PCs shape {PCs.shape}")
+
+    for perplexity in PERPLEXITY:
+        print(f"Running TSNE Using perplexity {perplexity}")
+        cells_embedded = tsne(PCs, perplexity=perplexity)
+        print(f"TSNE output size {cells_embedded.shape}")
+        pickle.dump((cells_embedded), open(join(OUTPUT_DIR, f'perplexity_{perplexity}.pkl'), 'wb'))
+
+
+
+if __name__ == '__main__':
+    run_bh_tsne()
+    # run_bh_tsne_all_perplexity()
 
 

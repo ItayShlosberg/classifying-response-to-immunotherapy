@@ -157,6 +157,7 @@ def indices_list_to_binary_list(lst):
 def create_folder(folder):
     if not os.path.isdir(folder):
         os.mkdir(folder)
+        print(f'folder: {folder} has been created')
 
 
 def get_common_indices_of_boolean_lists(*argv):
@@ -165,3 +166,48 @@ def get_common_indices_of_boolean_lists(*argv):
 
 def flip_sign_of_boolean_list(l1):
     return [not aa for aa in l1]
+
+
+def sort_dic(dic, by_key=True, ascending=True):
+    if by_key:
+        return {k: v for k, v in sorted(dic.items(), key=lambda item: item[0], reverse=ascending)}
+    return {k: v for k, v in sorted(dic.items(), key=lambda item: item[1], reverse=ascending)}
+
+def annotate_boxplot(bpdict, data, annotate_params=None,
+                     x_offset=0.05, x_loc=0,
+                     text_offset_x=35,
+                     text_offset_y=20):
+    """Annotates a matplotlib boxplot with labels marking various centile levels.
+
+    Parameters:
+    - bpdict: The dict returned from the matplotlib `boxplot` function. If you're using pandas you can
+    get this dict by setting `return_type='dict'` when calling `df.boxplot()`.
+    - annotate_params: Extra parameters for the plt.annotate function. The default setting uses standard arrows
+    and offsets the text based on other parameters passed to the function
+    - x_offset: The offset from the centre of the boxplot to place the heads of the arrows, in x axis
+    units (normally just 0-n for n boxplots). Values between around -0.15 and 0.15 seem to work well
+    - x_loc: The x axis location of the boxplot to annotate. Usually just the number of the boxplot, counting
+    from the left and starting at zero.
+    text_offset_x: The x offset from the arrow head location to place the associated text, in 'figure points' units
+    text_offset_y: The y offset from the arrow head location to place the associated text, in 'figure points' units
+
+    Example of use:
+    annotate_boxplot(pd.DataFrame(arr).boxplot(whis=[5, 95], return_type='dict'), arr)
+    """
+
+    data.sort()
+
+    if annotate_params is None:
+        annotate_params = dict(xytext=(text_offset_x, text_offset_y), textcoords='offset points',
+                               arrowprops={'arrowstyle': '->'})
+    v_95 = round(data[int(len(data) * 0.95) - 1], 2)
+    v_05 = round(data[int(len(data) * 0.05) - 1], 2)
+    v_50 = round(data[int(len(data) * 0.5) - 1], 2)
+    v_25 = round(data[int(len(data) * 0.25) - 1], 2)
+    v_75 = round(data[int(len(data) * 0.75) - 1], 2)
+    plt.annotate(f'{v_50} (median)', (x_loc + 1 + x_offset, bpdict['medians'][x_loc].get_ydata()[0]), **annotate_params)
+    plt.annotate(f'{v_25} (25%)', (x_loc + 1 + x_offset, bpdict['boxes'][x_loc].get_ydata()[0]), **annotate_params)
+    plt.annotate(f'{v_75} (75%)', (x_loc + 1 + x_offset, bpdict['boxes'][x_loc].get_ydata()[2]), **annotate_params)
+    plt.annotate(f'{v_05} (5%)', (x_loc + 1 + x_offset, bpdict['caps'][x_loc * 2].get_ydata()[0]), **annotate_params)
+    plt.annotate(f'{v_95} (95%)', (x_loc + 1 + x_offset, bpdict['caps'][(x_loc * 2) + 1].get_ydata()[0]),
+                 **annotate_params)
