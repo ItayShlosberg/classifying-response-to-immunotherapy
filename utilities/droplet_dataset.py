@@ -688,6 +688,7 @@ class Cell_information:
         self.is_myeloid = False
         self.is_CelBender_empty = False
         self.is_stromal = False
+        self.is_epithelial = False
         self.should_be_removed = False
         self.comment = None
 

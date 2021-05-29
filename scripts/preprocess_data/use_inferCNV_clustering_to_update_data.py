@@ -10,7 +10,11 @@ This is the last step in QC and as such, we update here other properties:
 Update 6.5.21:
 - We mark for removal: immune cells having myeloid & lymphoid conflicts.
 - We mark for removal: we decided to remove all tumor cells with conflicts even those which have CNVs patterns.
-TODO: - specify in cells_information whether a cell was removed in CellBender.
+- specify in cells_information whether a cell was removed in CellBender.
+- specify contaminated cells in immune compartment (CSV)- moved to stromal compartment
+Update 24.5.21:
+- specify contaminated cells in immune compartment (CSV, kmeans - cluster #10, in k=10) - moved to epithelial compartment
+
 
 ---------------------------------------------
 For tumor and not immune cells (the lower-side of the cnv map):
@@ -58,7 +62,7 @@ from utilities.droplet_dataset import loading_sample
 
 # In that path all pkl of the updated properties will be saved.
 # OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\update_runs\21.2.21'
-OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\update_runs\10.5.21'
+OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\update_runs\24.5.21'
 
 # path for samples which will be used to update. Important: taking the last-updated scrublet output. (after all other QC processes).
 ROW_SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\Data\droplet_seq\ROW_DATA'
@@ -78,8 +82,12 @@ EMPTY_BARCODES_PATH = r'D:\Technion studies\Keren Laboratory\python_playground\o
 # Potential contaminated cells, we need to remove these cells from the immune compartment and move them to the stroma
 # one, as they could definitely be related to this phenomenon where fibroblast “ate” the neutrophils as this is a common
 # feature of removing dying cells.
-# CONTAMINATED_FIBROBLAST_CELLS_PATH = r'/storage/md_keren/shitay/Data/tables/stroma_contaminated_cells_kmeans_k11_cluster7_expressing_neut.csv'
 CONTAMINATED_FIBROBLAST_CELLS_PATH = r'D:\Technion studies\Keren Laboratory\Data\tables\stroma_contaminated_cells_kmeans_k11_cluster7_expressing_neut.csv'
+
+# Potential contaminated cells, we need to remove these cells from the immune compartment and move them to
+# the epithelial one, as there were epithelial markers in cluster #10 in k=10. (kmeans 10.5.21)
+CONTAMINATED_EPITHELIAL_CELLS_PATH = r'D:\Technion studies\Keren Laboratory\Data\tables\epithelial_contaminated_cells_kmeans10.5.21_k10_cluster10.csv'
+
 
 def extract_sample(sample_id):
     """
@@ -240,6 +248,7 @@ def go_over_all_samples(tumor_df, immune_df):
         rna_sample = loading_sample(row_data_path=join(ROW_SAMPLES_PATH, f'{sample_id}.pkl'),
                                     cells_information_path=join(SAMPLES_INFORMATION_PATH, f'{sample_id}.pkl'))
         rna_sample.cells_information.setattr('should_be_removed', None, False)
+        rna_sample.cells_information.setattr('is_epithelial', None, False)
 
         # Update tumor cells
         tumor_clusters = list(tumor_df[tumor_df['sample'] == sample_id].iloc[0])[1:]
@@ -279,11 +288,34 @@ def go_over_all_samples(tumor_df, immune_df):
         contaminated_fib_cells_list = list(contaminated_fib_cells_df[contaminated_fib_cells_df['sample'] == sample_id]['barcode'])
         rna_sample.get_subset_by_barcodes(contaminated_fib_cells_list).cells_information.setattr('is_immune',
                                                                                                  None, False)
+        rna_sample.get_subset_by_barcodes(contaminated_fib_cells_list).cells_information.setattr('is_lymphoid',
+                                                                                                 None, False)
+        rna_sample.get_subset_by_barcodes(contaminated_fib_cells_list).cells_information.setattr('is_myeloid',
+                                                                                                 None, False)
         rna_sample.get_subset_by_barcodes(contaminated_fib_cells_list).cells_information.setattr('is_stromal',
                                                                                                  None, True)
         contaminated_comment = f'Found as a potential contaminated cell in kmeans k=11, cluster 7 expressing neut markers'
         rna_sample.get_subset_by_barcodes(contaminated_fib_cells_list).cells_information.setattr('comment',
                                                                                                  None, contaminated_comment)
+
+
+        # update 25.5.21 - Potential contaminated cells, we need to remove these cells from the immune compartment
+        # and move them to the epithelial one, as there were epithelial markers in cluster #10 in k=10. (kmeans 10.5.21)
+        contaminated_epith_cells_df = pd.read_csv(CONTAMINATED_EPITHELIAL_CELLS_PATH)
+        contaminated_epith_cells_list = list(contaminated_epith_cells_df[contaminated_epith_cells_df['sample'] == sample_id]['barcode'])
+        rna_sample.get_subset_by_barcodes(contaminated_epith_cells_list).cells_information.setattr('is_immune',
+                                                                                                   None, False)
+        rna_sample.get_subset_by_barcodes(contaminated_epith_cells_list).cells_information.setattr('is_lymphoid',
+                                                                                                   None, False)
+        rna_sample.get_subset_by_barcodes(contaminated_epith_cells_list).cells_information.setattr('is_myeloid',
+                                                                                                   None, False)
+        rna_sample.get_subset_by_barcodes(contaminated_epith_cells_list).cells_information.setattr('is_epithelial',
+                                                                                                 None, True)
+        contaminated_comment = f'10.5.21kmeans - Found as a potential contaminated cells in kmeans k=10, #cluster 10 epith markers'
+        rna_sample.get_subset_by_barcodes(contaminated_epith_cells_list).cells_information.setattr('comment',
+                                                                                                 None, contaminated_comment)
+
+
 
 
         # Save an updated version of current sample_id with inferCNV changes.

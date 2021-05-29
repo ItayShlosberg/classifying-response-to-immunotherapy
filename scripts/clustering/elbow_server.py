@@ -44,9 +44,12 @@ KMEANS_FILE_NAME = r'kmeans_immune_cells_4k_genes'  # excluding the suffix: '_k_
 if __name__ == '__main__':
 
     # Loads cohort
+    print('Running elbow script')
+    print(f'Loading cohort from:\n{COHORT_PATH}')
     cohort = pickle.load(open(COHORT_PATH, 'rb'))
     D = cdist(cohort.counts, cohort.counts, 'correlation')
 
+    print('Calculating Dist_t')
     Dis_t = 0
     for i in range(D.shape[0]):
         for j in range(i, D.shape[0]):

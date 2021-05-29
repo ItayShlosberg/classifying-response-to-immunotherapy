@@ -48,10 +48,12 @@ from utilities.general_helpers import create_folder
 
 
 
-OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/heatmap/27.4.21'
-FILTERED_CELLS_PATH = fr'/storage/md_keren/shitay/outputs/variance_filtered/immune_cells_var0.315.pkl'
-KMEANS_ROW_CLUSTERS_PATH = r'/storage/md_keren/shitay/outputs/clustering/kmeans/10.5.21/row_kmeans'
+OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/heatmap/29.5.21'
+FILTERED_CELLS_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/normalized/5.21/cohort_normalized_24.5.21.pkl'
+KMEANS_ROW_CLUSTERS_PATH = r'/storage/md_keren/shitay/outputs/clustering/kmeans/24.5.21/row_kmeans'
 KMEANS_FILE_NAME = r'kmeans_immune_cells_4k_genes'  # excluding the suffix: '_k_num.pkl'
+CLUSTERING_ANALYSIS_PATH = fr'/storage/md_keren/shitay/outputs/clustering/cluster_analysis/cluster_analysis_29.5.21'
+
 
 def create_cmap():
     """
@@ -79,6 +81,7 @@ if __name__ == '__main__':
 
     plt.rcParams['figure.dpi'] = 1000
     filtered_cells = pickle.load(open(FILTERED_CELLS_PATH, 'rb'))
+    filtered_cells = filtered_cells.filter_cells_by_property('is_immune', True)
     cmap = pickle.load(open(r'/storage/md_keren/shitay/outputs/clustering/heatmap/colorbar.pkl', 'rb'))
     NUM_OF_MARKER_GENES = 30
     print_color_heatmap = True
@@ -87,9 +90,11 @@ if __name__ == '__main__':
     create_folder(OUTPUT_PATH)
     for K in range(2, 16):
         print(f"Current K = {K}")
-        kmeans_clusters_path = join(KMEANS_DIR_PATH, fr'kmeans_immune_cells_var0.315_k_{K}.pkl')
-        clusters_indices = pickle.load(open(kmeans_clusters_path, 'rb'))['clusters']
-        # clusters_indices
+
+        kmeans_file_path = join(KMEANS_ROW_CLUSTERS_PATH, KMEANS_FILE_NAME + f'_k_{K}.pkl')
+        print(f'Loading kmeans file:\n{kmeans_file_path}')
+        clusters_indices = pickle.load(open(kmeans_file_path, 'rb'))['clusters']
+        # markers
         clustering_analysis = pickle.load(open(join(CLUSTERING_ANALYSIS_PATH, f'cluster_analysis_k_{K}.pkl'), 'rb'))
 
 
@@ -104,26 +109,40 @@ if __name__ == '__main__':
         print('num markers for each cluster: ', NUM_OF_MARKER_GENES)
         print('num markers for all clusters: ', NUM_OF_MARKER_GENES * len(clustering_analysis))
         print('num clusters: ', len(clustering_analysis))
-        for cluster_idx, cluster in enumerate(clustering_analysis):
-            pval = cluster['pval']
-            logratio = cluster['log ratios']
-            gene_ids = np.array(cluster['gene ids'])
-            gene_names = np.array(cluster['gene names'])
+        for cluster_dic in clustering_analysis:
+            cluster_idx = cluster_dic['cluster id']
+            cluster = cluster_dic['markers']
+            print(f'cluster idx {cluster_idx}')
 
-            if sum(pval == 0) >= NUM_OF_MARKER_GENES:
-                logratio = logratio[pval == 0]
-                gene_ids = gene_ids[pval == 0]
-                gene_names = gene_names[pval == 0]
-
-            logratio_indices = np.flip(np.argsort(logratio))
-
-            gene_names = gene_names[logratio_indices].tolist()
-            gene_ids = gene_ids[logratio_indices].tolist()
-            logratio = logratio[logratio_indices]
-            top_gene_markers[cluster_idx] = gene_names[:5]
-
+            #region
+            cluster = cluster.sort_values(by=['log_FC'], ascending=False)
+            gene_ids = cluster['features'].tolist()
+            top_gene_markers[cluster_idx] = cluster['gene names'][:5]
             gene_indices += [features.index(ii) for ii in gene_ids[:NUM_OF_MARKER_GENES]]
-            gene_horiz_lines += [gene_horiz_lines[-1] + NUM_OF_MARKER_GENES]
+            gene_horiz_lines += [gene_horiz_lines[-1] + len(gene_ids[:NUM_OF_MARKER_GENES])]
+            #endregion
+
+            #
+            # print(cluster)
+            # pval = cluster['pval']
+            # logratio = cluster['log ratios']
+            # gene_ids = np.array(cluster['gene ids'])
+            # gene_names = np.array(cluster['gene names'])
+            #
+            # if sum(pval == 0) >= NUM_OF_MARKER_GENES:
+            #     logratio = logratio[pval == 0]
+            #     gene_ids = gene_ids[pval == 0]
+            #     gene_names = gene_names[pval == 0]
+            #
+            # logratio_indices = np.flip(np.argsort(logratio))
+            #
+            # gene_names = gene_names[logratio_indices].tolist()
+            # gene_ids = gene_ids[logratio_indices].tolist()
+            # logratio = logratio[logratio_indices]
+            # top_gene_markers[cluster_idx] = gene_names[:5]
+            #
+            # gene_indices += [features.index(ii) for ii in gene_ids[:NUM_OF_MARKER_GENES]]
+            # gene_horiz_lines += [gene_horiz_lines[-1] + NUM_OF_MARKER_GENES]
         print('Num of repetition in markers:', NUM_OF_MARKER_GENES * K - len(set(gene_indices)), end="\n\n")
 
         cells_indices = []
@@ -192,3 +211,4 @@ if __name__ == '__main__':
                     for gene in top_gene_markers[key]:
                         text_file.write(' ' + gene + '\n')
                     text_file.write('\n')
+

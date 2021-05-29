@@ -25,13 +25,14 @@ from bhtsne import tsne
 
 
 
-OUTPUT_DIR = r'/storage/md_keren/shitay/outputs/TSNE/cohort_10.5.21/'
+OUTPUT_DIR = r'/storage/md_keren/shitay/outputs/TSNE/cohort_29.5.21/'
 
 # in use only in 'run_bh_tsne' function
-FILE_NAME = r'tumor_cells_bhtsne_11.5.21.pkl'
+FILE_NAME = r'immune_cells_bhtsne_29.5.21.pkl'
+PERPLEXITY = 130.0    # default=30.0
 
 # cohort should be normalized and variance filtered
-COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/normalized/5.21/tumor_cells_4k_genes.pkl'
+COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/normalized/5.21/cohort_normalized_24.5.21.pkl'
 
 
 def run_bh_tsne():
@@ -40,7 +41,7 @@ def run_bh_tsne():
     # print(f'ARG {sys.argv[1]}')
 
     cohort = pickle.load(open(COHORT_PATH, 'rb'))
-    # cohort = cohort.filter_cells_by_property('is_immune', True)
+    cohort = cohort.filter_cells_by_property('is_immune', True)
     print(f"Counts shape {cohort.counts.shape}")
 
     PCs = PCA(n_components=10).fit_transform(cohort.counts)
@@ -48,7 +49,7 @@ def run_bh_tsne():
     print(f"PCs shape {PCs.shape}")
 
     # cells_embedded = TSNE(n_components=2, perplexity=perplexity, random_state=21).fit_transform()
-    cells_embedded = tsne(PCs)
+    cells_embedded = tsne(PCs, perplexity=PERPLEXITY)
 
     print(f"TSNE output size {cells_embedded.shape}")
     pickle.dump((cells_embedded), open(join(OUTPUT_DIR, FILE_NAME), 'wb'))
@@ -62,7 +63,7 @@ def run_bh_tsne_all_perplexity():
     # print(f'ARG {sys.argv[1]}')
 
     cohort = pickle.load(open(COHORT_PATH, 'rb'))
-    # cohort = cohort.filter_cells_by_property('is_immune', True)
+    cohort = cohort.filter_cells_by_property('is_immune', True)
     print(f"Counts shape {cohort.counts.shape}")
 
     PCs = PCA(n_components=10).fit_transform(cohort.counts)
@@ -78,7 +79,7 @@ def run_bh_tsne_all_perplexity():
 
 
 if __name__ == '__main__':
-    run_bh_tsne()
-    # run_bh_tsne_all_perplexity()
+    # run_bh_tsne()
+    run_bh_tsne_all_perplexity()
 
 

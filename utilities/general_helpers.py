@@ -173,6 +173,7 @@ def sort_dic(dic, by_key=True, ascending=True):
         return {k: v for k, v in sorted(dic.items(), key=lambda item: item[0], reverse=ascending)}
     return {k: v for k, v in sorted(dic.items(), key=lambda item: item[1], reverse=ascending)}
 
+
 def annotate_boxplot(bpdict, data, annotate_params=None,
                      x_offset=0.05, x_loc=0,
                      text_offset_x=35,
@@ -211,3 +212,7 @@ def annotate_boxplot(bpdict, data, annotate_params=None,
     plt.annotate(f'{v_05} (5%)', (x_loc + 1 + x_offset, bpdict['caps'][x_loc * 2].get_ydata()[0]), **annotate_params)
     plt.annotate(f'{v_95} (95%)', (x_loc + 1 + x_offset, bpdict['caps'][(x_loc * 2) + 1].get_ydata()[0]),
                  **annotate_params)
+
+
+def transpose_list(l):
+    return list(map(list, zip(*l)))

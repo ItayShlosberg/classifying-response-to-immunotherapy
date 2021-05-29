@@ -1,125 +1,102 @@
-# # ------- SERVER EXTENSIONS ---------
-# lib =  r'/srv01/technion/shitay/Code/classifying_response_to_immunotherapy/utilities/droplet_dataset'
-# lib2 = r'/srv01/technion/shitay/Code/classifying_response_to_immunotherapy/utilities'
-# lib3 = r'/srv01/technion/shitay/Code/classifying_response_to_immunotherapy/data_analysis'
-# lib4 = r'/srv01/technion/shitay/Code/classifying_response_to_immunotherapy'
-# lib5 = r'/srv01/technion/shitay/Code/classifying_response_to_immunotherapy/scripts'
-# import sys
-# sys.path.append(lib)
-# sys.path.append(lib2)
-# sys.path.append(lib3)
-# sys.path.append(lib4)
-# sys.path.append(lib5)
-# # ------- SERVER EXTENSIONS ---------
-#
-# import matplotlib.pyplot as plt
-# from matplotlib.widgets import Cursor, Button
-# import numpy as np
-# import matplotlib
-# from utilities.droplet_dataset import  build_cohort
-# import os
-# from os.path import join
-# from DL.Mars_seq_DL.data_loading import *
-# from utilities.general_helpers import *
-# from utilities.droplet_dataset import *
-# from utilities.droplet_dataset import loading_sample
-#
+"""
+After running Analyze_kmeans_clusters.py tou have the marker gene list.
+so to create csv run this script on the output of running Analyze_kmeans_clusters.py.
+"""
 
-
-
-# SAMPLES = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\update_runs\21.2.21'
-
-# OUTPUT = r'D:\Technion studies\Keren Laboratory\Data\droplet_seq\Cohort\cohort_all_samples_3.2.21.pkl'
-# ss = r'C:\Users\itay\Desktop\New folder'
-#
-#
-# # cohort = build_cohort(ss)#, gene_path =r'D:\Technion studies\Keren Laboratory\python_playground\outputs\temporal garbage\gene_cohort.pkl')
-#
-#
-# # pickle.dump((cohort), open(OUTPUT, "wb"))
-# # pickle.dump((cohort), open(OUTPUT, 'wb'), protocol=4)#
-# # tt = cohort + cohort
-# # cc = pickle.load(open(OUTPUT, 'rb'))
-#
-# _breakpoint = 0
-# # samples = [subfolder for subfolder in os.listdir(SAMPLES) if not 'csv' in subfolder]
-# # rna_sample = extract_droplet_data_from_pickle(join(SAMPLES, samples[3]))
-# # rna_sample = rna_sample[[not aa for aa in rna_sample.cells_information.getattr('should_be_removed')]]
-# # rna_sample.normalize_data()
-# #
-# #
-# # sample_cell_idx = 50
-# # cell_barcode = rna_sample.barcodes[sample_cell_idx]
-# # cohort_cell_index = cohort.barcodes.index(cell_barcode)
-# #
-# #
-# # sample_gene_idx = rna_sample[sample_cell_idx][0].argmax()
-# # feature_name = rna_sample.features[sample_gene_idx]
-# # cohort_gene_index = cohort.features.index(feature_name)
-# #
-# # check = cohort.counts[cohort_cell_index, cohort_gene_index] == rna_sample.counts[sample_cell_idx, sample_gene_idx]
-# #
-# # _breakpoint = 0
-
-# ------- SERVER EXTENSIONS ---------
-
-
-
-# ROW_SAMPLES_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/ROW_DATA/'
-# SAMPLES_INFORMATION_PATH = r'/storage/md_keren/shitay/Data/inferCNV_data/update_runs/4.3.21/'
-#
-# sample = 'M106.pkl'
-#
-# rna_sample = loading_sample(row_data_path=join(ROW_SAMPLES_PATH, f'{sample}'),
-#                             cells_information_path=join(SAMPLES_INFORMATION_PATH, f'{sample}'))
-
-import sys
-
-from pyclustering.cluster.kmeans import kmeans
-from pyclustering.utils.metric import type_metric, distance_metric
-from pyclustering.cluster.center_initializer import kmeans_plusplus_initializer
-import numpy as np
-import matplotlib
-from utilities.droplet_dataset import  build_cohort
-import os
 from os.path import join
-from DL.Mars_seq_DL.data_loading import *
-from utilities.droplet_dataset import *
-import math
-import matplotlib as plt
-from sklearn.manifold import TSNE
-import statsmodels as sm
-import scipy.stats as stats
-from Bio.Cluster import kcluster
+import numpy as np
+import pandas as pd
+import scipy
+import sklearn
 from sklearn.manifold import TSNE
 import pickle
-from scipy.stats import pearsonr
-# %matplotlib notebook
-#
-# print("itay1")
-# print("itay2")
+# from Bio.Cluster import kcluster
+import os
+import numpy as np
+import yaml
+import os
+import pandas
+from collections import Counter
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
+# from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+import sys
+import seaborn as sns
+# import pyclustering
+import matplotlib.pylab as plt
+import seaborn as sb
+from shutil import copyfile
+import matplotlib as plt
+# ------- SERVER EXTENSIONS ---------
+lib =  r'/srv01/technion/shitay/Code/classifying_response_to_immunotherapy/utilities/droplet_dataset'
+lib2 = r'/srv01/technion/shitay/Code/classifying_response_to_immunotherapy/utilities'
+lib3 = r'/srv01/technion/shitay/Code/classifying_response_to_immunotherapy/data_analysis'
+lib4 = r'/srv01/technion/shitay/Code/classifying_response_to_immunotherapy'
+lib5 = r'/srv01/technion/shitay/Code/classifying_response_to_immunotherapy/scripts'
+import sys
+sys.path.append(lib)
+sys.path.append(lib2)
+sys.path.append(lib3)
+sys.path.append(lib4)
+sys.path.append(lib5)
+# ------- SERVER EXTENSIONS ---------
+from utilities.general_helpers import create_folder
 
 
-######## LOADING DATA ########
-sample_id = 'M104'
-ROW_SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\Data\droplet_seq\ROW_DATA'
-SAMPLES_INFORMATION_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\update_runs\4.3.21'
 
 
-rna_sample = loading_sample(row_data_path=join(ROW_SAMPLES_PATH, f'{sample_id}.pkl'),
-                                cells_information_path=join(SAMPLES_INFORMATION_PATH, f'{sample_id}.pkl'))
-print('Base')
-print(rna_sample.number_of_cells)
-print(rna_sample.number_of_genes)
-print(rna_sample.counts.shape)
 
 
-VARIANCE = 3
-sample = rna_sample.filter_genes_by_variance(VARIANCE, in_place=True).counts
-print()
-print('variance')
-print(rna_sample.number_of_cells)
-print(rna_sample.number_of_genes)
-print(rna_sample.counts.shape)
-print(len(rna_sample.gene_names))
-print(len(rna_sample.features))
+# OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/markers/27.4.21'
+FILTERED_CELLS_PATH = fr'/storage/md_keren/shitay/outputs/variance_filtered/immune_cells_var0.315.pkl'
+# KMEANS_DIR_PATH = r'/storage/md_keren/shitay/outputs/clustering/kmeans/row_kmeans'
+CLUSTERING_ANALYSIS_PATH = fr'/storage/md_keren/shitay/outputs/clustering/cluster_analysis/cluster_analysis_10.5.21'
+
+if __name__ == '__main__':
+
+
+    NUM_OF_MARKER_GENES = 30
+
+    # create_folder(OUTPUT_PATH)
+    for K in range(2, 3):
+        print(f"working on {K}")
+        # cluster_dir = join(OUTPUT_PATH, f'markers_cluster_{K}')
+        # create_folder(cluster_dir)
+        print(f"Current K = {K}")
+
+        clustering_analysis = pickle.load(open(join(CLUSTERING_ANALYSIS_PATH, f'cluster_analysis_k_{K}.pkl'), 'rb'))
+
+
+        print('num clusters: ', len(clustering_analysis))
+        for cluster in clustering_analysis:
+            cls_idx = cluster['cluster id']
+            markers = cluster['markers']
+            # markers.to_csv(join(cluster_dir, f'markers_cluster_{cls_idx+1}.csv'), index=False)
+            print(f'cluster {cls_idx}')
+            print(markers.head())
+            print(markers.tail(),end='\n\n\n')
+            print(markers['gene names'][:5])
+
+    #  5.4.21; create new format of fd using only one csv file and saves it in the main OUTPUT directory
+    # sheet (tab) for every K solution and column for each cluster
+    # writer_path = join(OUTPUT_PATH, 'markers_all_solutions.xlsx')
+    # writer = pd.ExcelWriter(writer_path, engine='xlsxwriter')
+    # for K_dir in sorted(os.listdir(OUTPUT_PATH)):
+    #     working_dir = join(OUTPUT_PATH, K_dir)
+    #     K = K_dir.split('_')[-1]
+    #     print(K)
+    #
+    #     new_table = {}
+    #     for cluster_marker_list in sorted(os.listdir(working_dir)):
+    #         cluster_idx = cluster_marker_list.split('_')[-1].replace('.csv', '')
+    #         print(cluster_marker_list)
+    #         df = pd.read_csv(join(working_dir, cluster_marker_list))
+    #         new_table[int(cluster_idx)] = list(df['gene names'])[:100]
+    #         if len(new_table[int(cluster_idx)]) < 100:
+    #             new_table[int(cluster_idx)] = new_table[int(cluster_idx)] + [None] * (
+    #                         100 - len(new_table[int(cluster_idx)]))
+    #     print([len(vv) for vv in list(new_table.values())])
+    #     new_sheet = pd.DataFrame(new_table)
+    #     new_sheet = new_sheet.reindex(sorted(new_sheet.columns), axis=1)
+    #     new_sheet.to_excel(writer, sheet_name=K, index=False)
+    # writer.save()

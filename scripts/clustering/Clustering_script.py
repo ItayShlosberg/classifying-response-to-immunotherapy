@@ -30,7 +30,7 @@ from scipy.stats import pearsonr
 # COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/cohort.pkl'
 # INPUT_PATH = r'/storage/md_keren/shitay/outputs/variance_filtered/immune_cells_var0.315.pkl'
 INPUT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/normalized/5.21/immune_cells_4k_genes.pkl'
-OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/kmeans/10.5.21'
+OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/kmeans/24.5.21'
 FILE_NAME = r'kmeans_immune_cells_4k_genes'
 
 

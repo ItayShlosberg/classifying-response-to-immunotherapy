@@ -24,16 +24,19 @@ from utilities.ML_environment import find_markers_in_clusters
 from utilities.general_helpers import create_folder
 
 
-OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/cluster_analysis/cluster_analysis_10.5.21'
-FILTERED_CELLS_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/normalized/5.21/immune_cells_10.5.21.pkl'
-KMEANS_ROW_CLUSTERS_PATH = r'/storage/md_keren/shitay/outputs/clustering/kmeans/10.5.21/row_kmeans'
+OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/cluster_analysis/cluster_analysis_29.5.21'
+FILTERED_CELLS_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/normalized/5.21/cohort_normalized_24.5.21.pkl'
+KMEANS_ROW_CLUSTERS_PATH = r'/storage/md_keren/shitay/outputs/clustering/kmeans/24.5.21/row_kmeans'
 KMEANS_FILE_NAME = r'kmeans_immune_cells_4k_genes'  # excluding the suffix: '_k_num.pkl'
 
 if __name__ == '__main__':
 
     K = int(sys.argv[1])
+    print(f'Running Analyze_kmeans_clusters with K={K}')
     print(f'Loading cohort file:\n{FILTERED_CELLS_PATH}')
     filtered_cells = pickle.load(open(FILTERED_CELLS_PATH, 'rb'))
+    filtered_cells = filtered_cells.filter_cells_by_property('is_immune', True)
+    print(f'Number of cells: {filtered_cells.number_of_cells}')
 
     kmeans_file_path = join(KMEANS_ROW_CLUSTERS_PATH, KMEANS_FILE_NAME + f'_k_{K}.pkl')
     print(f'Loading kmeans file:\n{kmeans_file_path}')
