@@ -37,8 +37,8 @@ from scipy.spatial.distance import cdist
 
 
 COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/normalized/5.21/immune_cells_4k_genes.pkl'
-OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/elbow/10.5.21_cohort/elbow.pkl'
-KMEANS_ROW_CLUSTERS_PATH = r'/storage/md_keren/shitay/outputs/clustering/kmeans/10.5.21/row_kmeans'
+OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/elbow/24.5.21_cohort/elbow.pkl'
+KMEANS_ROW_CLUSTERS_PATH = r'/storage/md_keren/shitay/outputs/clustering/kmeans/24.5.21/row_kmeans'
 KMEANS_FILE_NAME = r'kmeans_immune_cells_4k_genes'  # excluding the suffix: '_k_num.pkl'
 
 if __name__ == '__main__':
@@ -59,6 +59,7 @@ if __name__ == '__main__':
     for K in range(2, 16):
         print(f'K = {K}, ', end='')
         kmeans_clusters_path = join(KMEANS_ROW_CLUSTERS_PATH, KMEANS_FILE_NAME+f'_k_{K}.pkl')
+        print(f'Taking file {kmeans_clusters_path}')
         solution_k_clusters = pickle.load(open(kmeans_clusters_path, 'rb'))
         Dist_b = 0
         for idx in range(len(solution_k_clusters['clusters'])):
