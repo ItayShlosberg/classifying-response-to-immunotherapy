@@ -26,9 +26,8 @@ import pickle
 import numpy as np
 
 # You should put a path of non_normalize cohort with immune and tumor cells without variance filter.
-COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/non_normalized/5.21/cohort_non_normalized_10.5.21.pkl'
-
-OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/cNMF/conversions/tumor_filtered_cNMF_10.5.21.txt'
+COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/non_normalized/6.21/cohort_non_normalized_10.6.21.pkl'
+OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/cNMF/conversions/tumor_filtered_cNMF_10.6.21.txt'
 CONVERT_TUMOR = True     # False for immune
 
 

@@ -27,15 +27,26 @@ from utilities.droplet_dataset import loading_sample
 
 
 ROW_DATA_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/ROW_DATA'
-CELL_INFORMATION_PATH = r'/storage/md_keren/shitay/Data/inferCNV_data/update_runs/24.5.21'
-OUTPUT = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/normalized/5.21/cohort_normalized_24.5.21.pkl'
+CELL_INFORMATION_PATH = r'/storage/md_keren/shitay/Data/inferCNV_data/update_runs/26.6.21'
+OUTPUT = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/normalized/6.21'
+FILE_NAME = r'cohort_normalized_26.6.21.pkl'
+TO_NORMALIZE = True
 
-# CELL_INFORMATION_PATH = r'C:\Users\itay\Desktop\test\cells_information'
-# ROW_DATA_PATH = r'C:\Users\itay\Desktop\test\row_data'
+if __name__ == '__main__':
 
 
-gene_ids = build_cohort_gene_list(CELL_INFORMATION_PATH)
+    print(f'Run Build_cohort.py')
+    print('Parameters:')
+    print(f'ROW_DATA_PATH {ROW_DATA_PATH}')
+    print(f'CELL_INFORMATION_PATH {CELL_INFORMATION_PATH}')
+    print(f'OUTPUT {OUTPUT}')
+    print(f'FILE_NAME {FILE_NAME}')
+    print(f'TO_NORMALIZE {TO_NORMALIZE}')
 
-cohort = build_cohort(ROW_DATA_PATH, CELL_INFORMATION_PATH, gene_ids, to_normalize=True)
-pickle.dump((cohort), open(OUTPUT, 'wb'), protocol=4)#
+    gene_ids = build_cohort_gene_list(CELL_INFORMATION_PATH)
 
+    cohort = build_cohort(ROW_DATA_PATH, CELL_INFORMATION_PATH, gene_ids, to_normalize=TO_NORMALIZE)
+
+    create_folder(OUTPUT)
+    pickle.dump((cohort), open(join(OUTPUT, FILE_NAME), 'wb'), protocol=4)
+    print(f'OUTPUT has been saved in {join(OUTPUT, FILE_NAME)}')

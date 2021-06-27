@@ -24,9 +24,9 @@ from utilities.ML_environment import find_markers_in_clusters
 from utilities.general_helpers import create_folder
 
 
-OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/cluster_analysis/cluster_analysis_29.5.21'
-FILTERED_CELLS_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/normalized/5.21/cohort_normalized_24.5.21.pkl'
-KMEANS_ROW_CLUSTERS_PATH = r'/storage/md_keren/shitay/outputs/clustering/kmeans/24.5.21/row_kmeans'
+OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/cluster_analysis/cluster_analysis_26.6.21'
+FILTERED_CELLS_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/normalized/6.21/cohort_normalized_26.6.21.pkl'
+KMEANS_ROW_CLUSTERS_PATH = r'/storage/md_keren/shitay/outputs/clustering/kmeans/26.6.21/row_kmeans'
 KMEANS_FILE_NAME = r'kmeans_immune_cells_4k_genes'  # excluding the suffix: '_k_num.pkl'
 
 if __name__ == '__main__':

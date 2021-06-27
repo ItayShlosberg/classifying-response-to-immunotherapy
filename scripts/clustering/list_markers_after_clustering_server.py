@@ -42,8 +42,8 @@ sys.path.append(lib5)
 # ------- SERVER EXTENSIONS ---------
 from utilities.general_helpers import create_folder
 
-OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/markers/29.5.21'
-CLUSTERING_ANALYSIS_PATH = fr'/storage/md_keren/shitay/outputs/clustering/cluster_analysis/cluster_analysis_29.5.21'
+OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/markers/26.6.21'
+CLUSTERING_ANALYSIS_PATH = fr'/storage/md_keren/shitay/outputs/clustering/cluster_analysis/cluster_analysis_26.6.21'
 
 if __name__ == '__main__':
 

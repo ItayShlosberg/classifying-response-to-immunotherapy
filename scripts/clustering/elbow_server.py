@@ -34,17 +34,20 @@ sys.path.append(lib4)
 sys.path.append(lib5)
 from utilities.droplet_dataset import *
 from scipy.spatial.distance import cdist
+from utilities.general_helpers import create_folder
 
 
-COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/normalized/5.21/immune_cells_4k_genes.pkl'
-OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/elbow/24.5.21_cohort/elbow.pkl'
-KMEANS_ROW_CLUSTERS_PATH = r'/storage/md_keren/shitay/outputs/clustering/kmeans/24.5.21/row_kmeans'
+COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/normalized/6.21/immune_cells_26.6.21_4k_genes.pkl'
+OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/elbow/24.6.21_cohort'
+OUTPUT_FILE_NAME = r'elbow.pkl'
+KMEANS_ROW_CLUSTERS_PATH = r'/storage/md_keren/shitay/outputs/clustering/kmeans/26.6.21/row_kmeans'
 KMEANS_FILE_NAME = r'kmeans_immune_cells_4k_genes'  # excluding the suffix: '_k_num.pkl'
 
 if __name__ == '__main__':
 
     # Loads cohort
     print('Running elbow script')
+    create_folder(OUTPUT_PATH)
     print(f'Loading cohort from:\n{COHORT_PATH}')
     cohort = pickle.load(open(COHORT_PATH, 'rb'))
     D = cdist(cohort.counts, cohort.counts, 'correlation')
@@ -72,4 +75,4 @@ if __name__ == '__main__':
 
         All_Dist_b[K] = Dist_b
 
-    pickle.dump(({'Ks_Dist_b': All_Dist_b, 'Dis_t': Dis_t}), open(OUTPUT_PATH, 'wb'))
+    pickle.dump(({'Ks_Dist_b': All_Dist_b, 'Dis_t': Dis_t}), open(join(OUTPUT_PATH, OUTPUT_FILE_NAME), 'wb'))

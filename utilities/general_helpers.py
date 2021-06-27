@@ -168,10 +168,16 @@ def flip_sign_of_boolean_list(l1):
     return [not aa for aa in l1]
 
 
-def sort_dic(dic, by_key=True, ascending=True):
+def sort_dic(dic, by_key=True, descending=False):
     if by_key:
-        return {k: v for k, v in sorted(dic.items(), key=lambda item: item[0], reverse=ascending)}
-    return {k: v for k, v in sorted(dic.items(), key=lambda item: item[1], reverse=ascending)}
+        return {k: v for k, v in sorted(dic.items(), key=lambda item: item[0], reverse=descending)}
+    return {k: v for k, v in sorted(dic.items(), key=lambda item: item[1], reverse=descending)}
+
+
+def transpose(l1):
+    numpy_array = np.array(l1)#.astype(np.float32)
+    transposed_list = numpy_array.T
+    return transposed_list
 
 
 def annotate_boxplot(bpdict, data, annotate_params=None,

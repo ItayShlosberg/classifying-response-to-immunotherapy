@@ -21,18 +21,18 @@ import pickle
 from os.path import join
 from sklearn.decomposition import PCA
 from bhtsne import tsne
+from utilities.general_helpers import create_folder
 
 
 
-
-OUTPUT_DIR = r'/storage/md_keren/shitay/outputs/TSNE/cohort_29.5.21/'
+OUTPUT_DIR = r'/storage/md_keren/shitay/outputs/TSNE/cohort_26.6.21/'
 
 # in use only in 'run_bh_tsne' function
-FILE_NAME = r'immune_cells_bhtsne_29.5.21.pkl'
+FILE_NAME = r'immune_cells_bhtsne_26.6.21.pkl'
 PERPLEXITY = 130.0    # default=30.0
 
 # cohort should be normalized and variance filtered
-COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/normalized/5.21/cohort_normalized_24.5.21.pkl'
+COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/normalized/6.21/immune_cells_26.6.21_4k_genes.pkl'
 
 
 def run_bh_tsne():
@@ -41,7 +41,6 @@ def run_bh_tsne():
     # print(f'ARG {sys.argv[1]}')
 
     cohort = pickle.load(open(COHORT_PATH, 'rb'))
-    cohort = cohort.filter_cells_by_property('is_immune', True)
     print(f"Counts shape {cohort.counts.shape}")
 
     PCs = PCA(n_components=10).fit_transform(cohort.counts)
@@ -52,6 +51,7 @@ def run_bh_tsne():
     cells_embedded = tsne(PCs, perplexity=PERPLEXITY)
 
     print(f"TSNE output size {cells_embedded.shape}")
+    create_folder(OUTPUT_DIR)
     pickle.dump((cells_embedded), open(join(OUTPUT_DIR, FILE_NAME), 'wb'))
 
 
