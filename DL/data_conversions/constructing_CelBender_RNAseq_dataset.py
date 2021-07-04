@@ -1,3 +1,18 @@
+"""
+constructing_scRNAseq_Dataset_keep_empty:
+Here we create a droplet RNAseq dataset of samples after CellBender takes place as a preprocess.
+We use CellBender output as a get-go. Clean droplet'll be used while droplets that were classified as empty
+will be used too with the original values.
+PKLs will be saved in OUTPUT_PATH + empty_kept Dir.
+
+constructing_scRNAseq_Dataset_drop_empty:
+Here we create a droplet RNAseq dataset of samples after CellBender takes place as a preprocess.
+We use CellBender output as a get-go. Clean droplets'll be the used while droplets that were classified as empty
+will be removed.
+PKLs will be saved in OUTPUT_PATH + empty_kept Dir.
+"""
+
+
 import scanpy as sc
 from  os.path import join
 import sys
@@ -24,7 +39,6 @@ from utilities.general_helpers import *
 CELLBENDER_OUTPUT_PATH = r'D:\PycharmProjects\CellBender\server_output\parameterized_with_repairs'
 RAW_SAMPLES_OUTPUTS = r'D:\Technion studies\Keren Laboratory\Data\droplet_seq\all_samples_10.12.20'
 OUTPUT_PATH = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\CellBender\PARAMETERIZED_RUN_RNASEQ'
-
 
 
 def copy_rna_object(rna_sample):
@@ -88,7 +102,6 @@ def constructing_scRNAseq_Dataset_keep_empty():
 
         # Saving CellBender sample in RNAseq pkl object
         pickle.dump((CB_rna_sample ), open(os.path.join(KEEP_EMPTY_OUTPUT_PATH, sample_id, f"{sample_id}.pkl"), "wb"))
-
 
 
 def constructing_scRNAseq_Dataset_drop_empty():

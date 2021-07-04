@@ -20,7 +20,7 @@ sys.path.append(lib3)
 sys.path.append(lib4)
 sys.path.append(lib5)
 from utilities.droplet_dataset import *
-from utilities.ML_environment import find_markers_in_clusters
+from utilities.clustering_tools import find_markers_in_clusters
 from utilities.general_helpers import create_folder
 
 

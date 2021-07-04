@@ -38,7 +38,7 @@ from utilities.general_helpers import create_folder
 
 
 COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/normalized/6.21/immune_cells_26.6.21_4k_genes.pkl'
-OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/elbow/24.6.21_cohort'
+OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/elbow/26.6.21_cohort'
 OUTPUT_FILE_NAME = r'elbow.pkl'
 KMEANS_ROW_CLUSTERS_PATH = r'/storage/md_keren/shitay/outputs/clustering/kmeans/26.6.21/row_kmeans'
 KMEANS_FILE_NAME = r'kmeans_immune_cells_4k_genes'  # excluding the suffix: '_k_num.pkl'

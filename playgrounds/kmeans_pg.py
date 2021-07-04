@@ -30,7 +30,7 @@ from sklearn.manifold import TSNE
 import pickle
 from scipy.stats import pearsonr
 import statsmodels as sm
-from utilities.ML_environment import multipletests_fdr
+from utilities.clustering_tools import multipletests_fdr
 
 
 
@@ -74,7 +74,7 @@ kmeans_instance.process()
 clusters = kmeans_instance.get_clusters()
 
 
-from utilities.ML_environment import  find_markers_in_clusters
+from utilities.clustering_tools import  find_markers_in_clusters
 
 find_markers_in_clusters(rna_sample, clusters)
 

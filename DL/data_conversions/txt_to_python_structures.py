@@ -6,7 +6,7 @@ from utilities.droplet_dataset import *
 
 """
 After extracting the data that was collected from MGH (origin Matlab structures) and organizing it in folders.
-This script goes through all the folders and builds python structures that will store them.
+This script goes over all the folders and builds python structures that will store them.
 """
 
 
