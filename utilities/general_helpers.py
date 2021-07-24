@@ -222,3 +222,17 @@ def annotate_boxplot(bpdict, data, annotate_params=None,
 
 def transpose_list(l):
     return list(map(list, zip(*l)))
+
+
+def bold(string):
+    """
+    Return Bold string for print
+    :param string:
+    :return:
+    """
+    return '\033[1m' + string + '\033[0m'
+
+
+def annotate_seaborn_barplot(axs):
+    for p in axs.patches:
+        axs.annotate(str(np.round(p.get_height(),3)), (p.get_x() * 1.005, p.get_height() * 1.005))

@@ -26,14 +26,17 @@ import pickle
 import numpy as np
 
 # You should put a path of non_normalize cohort with immune and tumor cells without variance filter.
-COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/non_normalized/6.21/cohort_non_normalized_10.6.21.pkl'
-OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/cNMF/conversions/tumor_filtered_cNMF_10.6.21.txt'
+COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/non_normalized/6.21/cohort_non_normalized_26.6.21.pkl'
+OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/cNMF/conversions/tumor_filtered_cNMF_26.6.21.txt'
 CONVERT_TUMOR = True     # False for immune
 
 
 if __name__ == '__main__':
 
     print(f'Starting data conversion for cNMF')
+    print(f'COHORT_PATH: {COHORT_PATH}')
+    print(f'OUTPUT_PATH: {OUTPUT_PATH}')
+    print(f'CONVERT_TUMOR: {CONVERT_TUMOR}')
     cohort = pickle.load(open(COHORT_PATH, 'rb'))
     print(f'{COHORT_PATH} file has been loaded')
     if CONVERT_TUMOR:
@@ -43,17 +46,26 @@ if __name__ == '__main__':
         cohort = cohort.filter_cells_by_property('is_immune', True)
         print(f'immune cells only')
 
-    counts = cohort.counts
+    cohort.filter_protein_coding_genes()
+    print(f'Num of protein coding genes: {cohort.counts.shape}')
+    values = cohort.counts
     cell_ids = [f'_'.join(v) for v in list(zip(cohort.samples, cohort.barcodes))]
     gene_ids = cohort.features
     gene_names = cohort.gene_names
 
     # drop all gene with count=0
-    gene_indices = (np.sum(counts, axis=0)!=0)
+    gene_indices = (np.sum(values, axis=0) != 0)
     gene_names = [gene_names[i] for i in range(len(gene_names)) if gene_indices[i]]
-    gene_ids = [gene_ids[i] for i in range(len(gene_names)) if gene_indices[i]]
-    values = counts[:, gene_indices]
-    print(values.shape)
+    gene_ids = [gene_ids[i] for i in range(len(gene_ids)) if gene_indices[i]]
+    values = values[:, gene_indices]
+    print(f'Num of genes after removal count zero genes: {values.shape}')
+
+    # drop all genes start with 'MT-''
+    gene_indices = [idx for idx, g in enumerate(gene_names) if not 'MT-' in g]
+    gene_names = [gene_names[idx] for idx in gene_indices]
+    gene_ids = [gene_ids[idx] for idx in gene_indices]
+    values = values[:, gene_indices]
+    print(f'Num of genes after removal of MT- genes: {values.shape}')
 
     print(f'Saving output in {OUTPUT_PATH}')
     # build file and save it

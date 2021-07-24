@@ -224,6 +224,30 @@ class Cohort_RNAseq:
     def filter_cells_by_property(self, prop_name, value):
         return self[[aa == value for aa in self.cells_information.getattr(prop_name)]]
 
+    def filter_protein_coding_genes(self, in_place=True, PROTEIN_CODING_FILE = r'/storage/md_keren/shitay/Data/tables/gene_ens_map.csv'):
+        """
+        Keeps only protein coding genes
+        :return:
+        """
+        df = pd.read_csv(PROTEIN_CODING_FILE, header=None, names=['gene_id', 'gene', '1', '2'])
+        protein_coding_genes = df[df['2'] == 'protein_coding']['gene'].tolist()
+        protein_coding_gene_indices = [idx for idx, g in enumerate(self.gene_names) if
+                                       g in protein_coding_genes]
+        filtered_cells = self.counts[:, protein_coding_gene_indices]
+        filter_features = [self.features[i] for i in protein_coding_gene_indices]
+        filtered_genes = [self.gene_names[i] for i in protein_coding_gene_indices]
+        if in_place:
+            self.counts = filtered_cells
+            self.gene_names = filtered_genes
+            self.features = filter_features
+            self.number_of_genes = len(self.gene_names)
+            print(f"Dataset was cleared from non-protein coding genes")
+        return RNAseq_Sample(filtered_cells,
+                             filtered_genes,
+                             self.barcodes,
+                             filter_features,
+                             self.cells_information)
+
     def filter_genes_by_variance(self, variance, in_place=True):
         """
         :param variance: genes with variance bigger than given value will stay, otherwise will be removed.
@@ -396,6 +420,30 @@ class RNAseq_Sample:
     def get_subset_by_barcodes(self, barcode_list):
         indices = [self.barcodes.index(bb) for bb in barcode_list]
         return self[indices]
+
+    def filter_protein_coding_genes(self, in_place=True, PROTEIN_CODING_FILE = r'/storage/md_keren/shitay/Data/tables/gene_ens_map.csv'):
+        """
+        Keeps only protein coding genes
+        :return:
+        """
+        df = pd.read_csv(PROTEIN_CODING_FILE, header=None, names=['gene_id', 'gene', '1', '2'])
+        protein_coding_genes = df[df['2'] == 'protein_coding']['gene'].tolist()
+        protein_coding_gene_indices = [idx for idx, g in enumerate(self.gene_names) if
+                                       g in protein_coding_genes]
+        filtered_cells = self.counts[:, protein_coding_gene_indices]
+        filter_features = [self.features[i] for i in protein_coding_gene_indices]
+        filtered_genes = [self.gene_names[i] for i in protein_coding_gene_indices]
+        if in_place:
+            self.counts = filtered_cells
+            self.gene_names = filtered_genes
+            self.features = filter_features
+            self.number_of_genes = len(self.gene_names)
+            print(f"Dataset was cleared from non-protein coding genes")
+        return RNAseq_Sample(filtered_cells,
+                             filtered_genes,
+                             self.barcodes,
+                             filter_features,
+                             self.cells_information)
 
     def filter_cells_by_property(self, prop_name, value):
         return self[[aa == value for aa in self.cells_information.getattr(prop_name)]]

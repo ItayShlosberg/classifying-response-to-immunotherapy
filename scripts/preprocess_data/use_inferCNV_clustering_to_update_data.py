@@ -226,12 +226,6 @@ def treat_tumor_cells_with_immune_conflict(rna_sample):
     contaminated_comment = f'10.6.21 tumor cells with immune markers that may be on tumor cells'
     cells_moving.cells_information.setattr('comment', None, contaminated_comment)
 
-    not_dying_cells_indices = [not b for b in cells_moving.cells_information.getattr('is_apoptosis')]
-    cells_moving[not_dying_cells_indices].cells_information.setattr('should_be_removed', None, False)
-
-
-    _breakpoint = 0
-
 
 def convert_cluster_str_to_int(tumor_clusters):
     int_tumor_clusters = tuple([int(jj) for jj in ''.join(ii for ii in tumor_clusters if ii not in ['(', ')', ' ']).split(',')])
@@ -336,6 +330,11 @@ def go_over_all_samples(tumor_df, immune_df):
         rna_sample.cells_information.setattr('is_epithelial', None, False)
         rna_sample.cells_information.setattr('comment', None, None)
 
+
+        # update 10.6.21 - tumor cells can express some immune markers, we need to look at what markers they are
+        # allowed to express
+        treat_tumor_cells_with_immune_conflict(rna_sample)
+
         # Update tumor cells
         tumor_clusters = list(tumor_df[tumor_df['sample'] == sample_id].iloc[0])[1:]
         tumor_clusters = rearrange_tumor_clusters(tumor_clusters, rna_sample.number_of_cells)
@@ -382,9 +381,7 @@ def go_over_all_samples(tumor_df, immune_df):
         treat_immune_cells_contaminated_with_epithelial(rna_sample, sample_id,
                                                         CONTAMINATED_EPITHELIAL_CELLS_KMEANS24_5_21_PATH)
 
-        # update 10.6.21 - tumor cells can express some immune markers, we need to look at what markers they are
-        # allowed to express
-        treat_tumor_cells_with_immune_conflict(rna_sample)
+
 
         # Save an updated version of current sample_id with inferCNV changes.
         # pickle.dump((rna_sample), open(join(OUTPUT_PATH, f'{sample_id}.pkl'), 'wb'))
