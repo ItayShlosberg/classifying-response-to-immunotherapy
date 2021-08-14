@@ -35,13 +35,18 @@ sys.path.append(lib5)
 from utilities.droplet_dataset import *
 from scipy.spatial.distance import cdist
 from utilities.general_helpers import create_folder
+import os.path
+from  os.path import join
+import os
 
 
-COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/normalized/6.21/immune_cells_26.6.21_4k_genes.pkl'
-OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/elbow/26.6.21_cohort'
+
+COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/normalized/6.21/myeloid_normalized_26.6.21_4k_genes.pkl'
+OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/myeloid/elbow/cohort_26.6.21_run_11.8.21'
 OUTPUT_FILE_NAME = r'elbow.pkl'
-KMEANS_ROW_CLUSTERS_PATH = r'/storage/md_keren/shitay/outputs/clustering/kmeans/26.6.21/row_kmeans'
+KMEANS_ROW_CLUSTERS_PATH = r'/storage/md_keren/shitay/outputs/clustering/myeloid/kmeans/cohort_26.6.21_run_8.8.21/row_kmeans'
 KMEANS_FILE_NAME = r'kmeans_immune_cells_4k_genes'  # excluding the suffix: '_k_num.pkl'
+SAVE_DISTANCE_MATRIX = True
 
 if __name__ == '__main__':
 
@@ -50,7 +55,14 @@ if __name__ == '__main__':
     create_folder(OUTPUT_PATH)
     print(f'Loading cohort from:\n{COHORT_PATH}')
     cohort = pickle.load(open(COHORT_PATH, 'rb'))
-    D = cdist(cohort.counts, cohort.counts, 'correlation')
+
+    if SAVE_DISTANCE_MATRIX:
+        CDIST_PATH = join(OUTPUT_PATH, r'cdist.pkl')
+        if os.path.isfile(CDIST_PATH):
+            D = pickle.load(open(CDIST_PATH, 'rb'))
+        else:
+            D = cdist(cohort.counts, cohort.counts, 'correlation')
+            pickle.dump((D), open(CDIST_PATH, 'wb'), protocol=4)
 
     print('Calculating Dist_t')
     Dis_t = 0

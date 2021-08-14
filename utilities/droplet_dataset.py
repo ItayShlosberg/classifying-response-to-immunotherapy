@@ -159,6 +159,31 @@ def loading_sample(row_data_path, cells_information_path=None):
     return rna_sample
 
 
+def get_requested_subset(cohort, SUBSET):
+    # ANALYSIS PARAMS for MYELOIDS, taken from summary of immune clustering analysis - cohort 26.6.21
+    MYELOID_CLUSTER_IDX = 5     # myeloid cluster
+    IMMUNE_CLUSTERING_PATH = r'/storage/md_keren/shitay/outputs/clustering/immune/summaries/26.6.21/immune_kmeans_26.6.21_clusters_mapping.csv'
+
+    if SUBSET is None:
+        print(f'No subset request was given')
+        return cohort
+    elif SUBSET == 'MYELOIDS':
+        print(f'Will be performed on myeloids')
+
+        immune_mapping = pd.read_csv(IMMUNE_CLUSTERING_PATH)[['Sample', 'Barcode', 'Cluster']]
+        myeloid_indices = immune_mapping[immune_mapping['Cluster'] == MYELOID_CLUSTER_IDX][['Sample', 'Barcode']].values
+
+        return cohort.get_subset_by_identifiers(myeloid_indices[:, 0], myeloid_indices[:, 1])
+
+    elif SUBSET == 'CYTOTOXIC_T_CELLS':
+        print(f'Will be performed on cytotoxic T cells')
+        cytotoxic_T_cells_indices = ['CD8 Cytotoxic T cells' in types for types in
+                                     cohort.cells_information.getattr('cell_type_list')]
+        return cohort[cytotoxic_T_cells_indices]
+    print(f'ERROR! No valid SUBSET value was passed!')
+    raise Exception(f'ERROR! the SUBSET value is not valid!')
+
+
 class Cohort_RNAseq:
     """
     Storing all samples in one object. Similar to "RNAseq_Sample", except of having list of
@@ -196,8 +221,10 @@ class Cohort_RNAseq:
         self.number_of_genes = len(gene_names)
         self.number_of_cells = len(barcodes)
         self.cells_information = Cell_Inf_List(self.number_of_cells)
+        self.is_protein_coding_filtered = False
         if cells_information:
             self.cells_information = cells_information
+
 
 
     def get_subset_by_identifiers(self, sample_list, barcodes_list):
@@ -229,6 +256,9 @@ class Cohort_RNAseq:
         Keeps only protein coding genes
         :return:
         """
+        if self.is_protein_coding_filtered:
+            print(f'is already protein coding filtered')
+            return self
         df = pd.read_csv(PROTEIN_CODING_FILE, header=None, names=['gene_id', 'gene', '1', '2'])
         protein_coding_genes = df[df['2'] == 'protein_coding']['gene'].tolist()
         protein_coding_gene_indices = [idx for idx, g in enumerate(self.gene_names) if
@@ -242,6 +272,7 @@ class Cohort_RNAseq:
             self.features = filter_features
             self.number_of_genes = len(self.gene_names)
             print(f"Dataset was cleared from non-protein coding genes")
+            self.is_protein_coding_filtered = True
         return RNAseq_Sample(filtered_cells,
                              filtered_genes,
                              self.barcodes,

@@ -42,8 +42,8 @@ sys.path.append(lib5)
 # ------- SERVER EXTENSIONS ---------
 from utilities.general_helpers import create_folder
 
-OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/markers/26.6.21'
-CLUSTERING_ANALYSIS_PATH = fr'/storage/md_keren/shitay/outputs/clustering/cluster_analysis/cluster_analysis_26.6.21'
+OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/myeloid/markers/11.8.21'
+CLUSTERING_ANALYSIS_PATH = fr'/storage/md_keren/shitay/outputs/clustering/myeloid/cluster_analysis/cluster_analysis_11.8.21' # immune/cytotoxic_t_cells/myeloid
 
 if __name__ == '__main__':
 

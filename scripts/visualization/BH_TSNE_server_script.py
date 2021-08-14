@@ -22,17 +22,21 @@ from os.path import join
 from sklearn.decomposition import PCA
 from bhtsne import tsne
 from utilities.general_helpers import create_folder
+import pandas as pd
+from utilities.droplet_dataset import get_requested_subset
 
 
-
-OUTPUT_DIR = r'/storage/md_keren/shitay/outputs/TSNE/cohort_26.6.21/'
+# OUTPUT_DIR = r'/storage/md_keren/shitay/outputs/TSNE/cohort_26.6.21/cytotoxic_t_cells'
+OUTPUT_DIR = r'/storage/md_keren/shitay/outputs/TSNE/cohort_26.6.21/myeloid'
 
 # in use only in 'run_bh_tsne' function
 FILE_NAME = r'immune_cells_bhtsne_26.6.21.pkl'
-PERPLEXITY = 130.0    # default=30.0
+CSV_SUFFIX = r'immune_cells_bhtsne_26.6.21.csv'
+PERPLEXITY = 30.0    # default=30.0
 
 # cohort should be normalized and variance filtered
 COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/normalized/6.21/immune_cells_26.6.21_4k_genes.pkl'
+SUBSET = 'MYELOIDS' # None - all cells, MYELOIDS/CYTOTOXIC_T_CELLS
 
 
 def run_bh_tsne():
@@ -41,6 +45,8 @@ def run_bh_tsne():
     # print(f'ARG {sys.argv[1]}')
 
     cohort = pickle.load(open(COHORT_PATH, 'rb'))
+    if SUBSET:
+        cohort = get_requested_subset(cohort, SUBSET)
     print(f"Counts shape {cohort.counts.shape}")
 
     PCs = PCA(n_components=10).fit_transform(cohort.counts)
@@ -54,6 +60,12 @@ def run_bh_tsne():
     create_folder(OUTPUT_DIR)
     pickle.dump((cells_embedded), open(join(OUTPUT_DIR, FILE_NAME), 'wb'))
 
+    # build DF
+    df = pd.DataFrame(cells_embedded, columns=['x', 'y'])
+    df['Barcode'] = cohort.barcodes
+    df['Sample'] = cohort.samples
+    df.to_csv(join(OUTPUT_DIR, CSV_SUFFIX))
+
 
 def run_bh_tsne_all_perplexity():
     PERPLEXITY = [10.0, 30.0, 50.0, 70.0, 90.0, 110.0, 130.0, 150.0]
@@ -64,6 +76,8 @@ def run_bh_tsne_all_perplexity():
 
     cohort = pickle.load(open(COHORT_PATH, 'rb'))
     cohort = cohort.filter_cells_by_property('is_immune', True)
+    if SUBSET:
+        cohort = get_requested_subset(cohort, SUBSET)
     print(f"Counts shape {cohort.counts.shape}")
 
     PCs = PCA(n_components=10).fit_transform(cohort.counts)
@@ -76,10 +90,14 @@ def run_bh_tsne_all_perplexity():
         print(f"TSNE output size {cells_embedded.shape}")
         pickle.dump((cells_embedded), open(join(OUTPUT_DIR, f'perplexity_{perplexity}.pkl'), 'wb'))
 
+        df = pd.DataFrame(cells_embedded, columns=['x', 'y'])
+        df['Barcode'] = cohort.barcodes
+        df['Sample'] = cohort.samples
+        df.to_csv(join(OUTPUT_DIR, f'perplexity_{perplexity}.csv'))
 
 
 if __name__ == '__main__':
-    # run_bh_tsne()
-    run_bh_tsne_all_perplexity()
+    run_bh_tsne()
+    # run_bh_tsne_all_perplexity()
 
 

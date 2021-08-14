@@ -210,6 +210,59 @@ def find_markers_in_clusters(data_rna_seq, clusters_indices, log_ratio_threshold
     return cluster_markers_list
 
 
+def get_clusters_indices(df, cohort):
+    """
+    If you use DF to store the cluster map, and you want to use the funsctions of finding markers you need to converd the
+    cluster map to list/dictionary first. that is what this  function does.
+    :param df: cluster map. contains Cluster, Sample and Barcode columns.
+    :param cohort: Cohort_rna_seq object.
+    :return: dic of
+    """
+    mapping = list(zip(cohort.samples, cohort.barcodes))
+    clusters = sorted(set(df['Cluster']))
+    cluster_indexes = {}
+    for cluster_idx in clusters:
+        barcodes_list = df[df['Cluster'] == cluster_idx]['Barcode'].tolist()
+        sample_list = df[df['Cluster'] == cluster_idx]['Sample'].tolist()
+        cell_idxs = [mapping.index(pair_identifier) for pair_identifier in zip(sample_list, barcodes_list)]
+        cluster_indexes[cluster_idx] = cell_idxs
+    return cluster_indexes
+
+
+def find_satisfying_list_of_markers_in_clusters(data_rna_seq, clusters_indices, min_markers=30, log_ratio_threshold = 0.25, pval_threshold=0.05,
+                             min_pct=0.1, min_diff_pct=0.1):
+    """
+
+    :param data_rna_seq:
+    :param clusters_indices:
+    :return:
+    """
+    cluster_markers_list = []
+    for cluster_idx in range(len(clusters_indices)):
+        print(f'Progress: {cluster_idx+1}/{len(clusters_indices)}')
+        current_cluster_indices = clusters_indices[cluster_idx]
+        #  remove clusters with less than 20 cells before you run the marker analysis.
+        if len(current_cluster_indices) < 20:
+            print('Less than 20 cells, wont look for markers')
+            cluster_markers_list.append({'cluster id': cluster_idx,
+                                         'markers': pd.DataFrame(columns=['features', 'gene names',
+                                                                          '(1)mean_expression', '(2)mean expression',
+                                                                          'log_FC', '(1)#expressing', '(2)#expressing',
+                                                                          '(1)%expressing', '(2)%expressing',
+                                                                          '%expressing_diff'])})
+            continue
+        other_clusters_indices = [ii for ii in flatten_list(clusters_indices) if not ii in clusters_indices[cluster_idx]]
+        cluster_markers = find_marker_genes_in_cluster(data_rna_seq[current_cluster_indices], data_rna_seq[other_clusters_indices], log_ratio_threshold, pval_threshold, min_pct, min_diff_pct)
+        n_loops = 0
+        while len(cluster_markers) < min_markers and n_loops < 3:
+            min_diff_pct = min_diff_pct/2
+            min_pct = min_pct/2
+            n_loops += 1
+            cluster_markers = find_marker_genes_in_cluster(data_rna_seq[current_cluster_indices], data_rna_seq[other_clusters_indices], log_ratio_threshold, pval_threshold, min_pct, min_diff_pct)
+        cluster_markers_list.append({'cluster id': cluster_idx, 'markers': cluster_markers})
+    return cluster_markers_list
+
+
 
 def shows_statistics_in_clusters(Data_RNAseq, clusters_list):
     cluster_samples = {}
