@@ -17,7 +17,7 @@ from utilities.general_helpers import *
 # CONFIG_PATH = r'cfg\factory_cfg\variance_2_test_percent0.30000000000000004_patients_post_cfg.yaml'
 CONFIG_PATH = r'cfg\xgboost_1_cfg.yaml'
 CONFIG_PATH = r'..\cfg\dummy.yaml'
-# CONFIG_PATH = sys.argv[1] if len(sys.argv)>1 else r'cfg\xgboost_1_cfg.yaml' # for terminal with outer config operation
+# CONFIG_PATH = sys.argv[1] if len(sys.argv)>1 else r'cfg\dummy.yaml' # for terminal with outer config operation
 
 EXPERIMENT_NAME, EXPERIMENTS_FOLDER, config = load_yml(CONFIG_PATH)
 

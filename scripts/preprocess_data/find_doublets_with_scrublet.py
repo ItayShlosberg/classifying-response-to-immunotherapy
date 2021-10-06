@@ -12,9 +12,9 @@ from utilities.general_helpers import *
 from termcolor import colored
 from utilities.droplet_dataset import loading_sample
 
-ROW_SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\Data\droplet_seq\ROW_DATA'
-SAMPLES_INFORMATION_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\apoptosis\4.3.21'
-OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\scrublet\4.3.21'
+ROW_SAMPLES_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\Data\droplet_seq\new_data_3.10.21\ROW_DATA'
+SAMPLES_INFORMATION_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\new_data_3.10.21_outputs\apoptosis\6.10.21'
+OUTPUT_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\new_data_3.10.21_outputs\scrublet\6.10.21'
 
 # Union summaries - None if you don't want to combine with older summary,
 # otherwise specify the previous summary
@@ -53,6 +53,7 @@ def run_scrub_over_all_samples():
         # Extracts one of the samples from PC
         rna_sample = loading_sample(row_data_path=join(ROW_SAMPLES_PATH, f'{sample}'),
                                     cells_information_path=join(SAMPLES_INFORMATION_PATH, f'{sample}'))
+        rna_sample.normalize_data()
         try:
             scrub = scr.Scrublet(rna_sample.counts)
             doublet_scores, predicted_doublets = scrub.scrub_doublets()

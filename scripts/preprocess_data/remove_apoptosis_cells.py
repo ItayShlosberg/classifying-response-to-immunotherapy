@@ -30,18 +30,18 @@ from DL.Mars_seq_DL.data_loading import extract_droplet_data_from_pickle
 from os.path import join
 from termcolor import colored
 
-SAMPLES_INFORMATION_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\classifying_cell_types\3.3.21'
-ROW_SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\Data\droplet_seq\ROW_DATA'
-OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\apoptosis\4.3.21'
+SAMPLES_INFORMATION_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\new_data_3.10.21_outputs\classifying_cell_types\4.10.21'
+ROW_SAMPLES_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\Data\droplet_seq\new_data_3.10.21\ROW_DATA'
+OUTPUT_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\new_data_3.10.21_outputs\apoptosis\6.10.21'
 
 # Use 10X clusters
-CLUSTER_FOLDER_PATH = r'D:\Technion studies\Keren Laboratory\Data\Melanoma\clusters'
+CLUSTER_FOLDER_PATH = r'C:\Users\KerenYlab\Desktop\Technion studies\Keren Laboratory\Data\Melanoma\clusters'
 # Use APOPTOSIS_CLUSTERS table to see which samples should be treated with clustering
-APOPTOSIS_CLUSTERS_PATH = r'D:\Technion studies\Keren Laboratory\Data\tables\apoptosis_remove_using_clusters.xlsx'
+APOPTOSIS_CLUSTERS_PATH = r'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\Data\tables\new_data_3.10.21\apoptosis_remove_using_clusters.xlsx'
 
 # Use the classifying cell-types script for apoptosis summary
 # None - if you're not interested in saving a new updated summary.
-SUMMARY_PATH = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\classifying_cell_types\10.12.20\summary.csv'
+SUMMARY_PATH = r'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\new_data_3.10.21_outputs\classifying_cell_types\4.10.21\summary.csv'
 MIN_CLUSTER_THRESHOLD = 0.15
 NORMAL_SAMPLES_THRESHOLD = 0.2
 
@@ -146,13 +146,16 @@ def determine_apoptosis_in_special_samples():
     for row_idx, row in apoptosis_clustes_df.iterrows():
         sample_id = row['sample_id']
 
-        confidence_threshold = row['confidence_threshold']
-        clusters = [int(ii) for ii in row['clusters'].split(';')]
-
         rna_sample = loading_sample(row_data_path=join(ROW_SAMPLES_PATH, f'{sample_id}.pkl'),
-                                    cells_information_path=join(SAMPLES_INFORMATION_PATH, sample_id, f'{sample_id}.pkl'))#extract_sample(sample_id)
-        cluster_indexes = extract_apoptosis_cluster_indexes(sample_id, clusters, rna_sample)
+                                    cells_information_path=join(SAMPLES_INFORMATION_PATH, sample_id,
+                                                                f'{sample_id}.pkl'))  # extract_sample(sample_id)
 
+        confidence_threshold = row['confidence_threshold']
+        if row['clusters'] != 'nan':
+            clusters = [int(ii) for ii in row['clusters'].split(';')]
+            cluster_indexes = extract_apoptosis_cluster_indexes(sample_id, clusters, rna_sample)
+        else:
+            cluster_indexes = np.zeros(rna_sample.number_of_cells).astype(bool)
         # Extract mitochondria content.
         counting_reads = rna_sample.counts.sum(axis=1).astype(np.float64)
         mitochondria_content = rna_sample.counts[:, [s.startswith('MT-') for s in rna_sample.gene_names]].sum(
@@ -200,8 +203,8 @@ def add_apoptosis_summary():
         sample_id = row['sample name']
 
         # Extract samples from OUTPUT path because that's the path of the UPDATED samples (with the apoptosis)
-        rna_sample = loading_sample(row_data_path=join(ROW_SAMPLES_PATH, f'{sample_id}.pkl'),
-                                    cells_information_path=join(OUTPUT_PATH, f'{sample_id}.pkl'))
+        rna_sample = loading_sample(row_data_path=join(ROW_SAMPLES_PATH, f'{sample_id}'),
+                                    cells_information_path=join(OUTPUT_PATH, f'{sample_id}'))
         number_of_cells = rna_sample.number_of_cells
 
         number_of_apoptosis_cells = sum([c_inf.is_apoptosis for c_inf in rna_sample.cells_information])

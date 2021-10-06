@@ -14,7 +14,18 @@ pos_neg_conflicts.pkl - indicators array for all cells, which classified cells h
 cancers_conflicts.pkl - indicators array for all cells, which cells had a conflict with cancer.
 cells_with_neg_pos_conflict.csv - table mapping between cells with a negative markers conflict and the this list of negative markers.
 """
-
+import sys
+# ------- SERVER EXTENSIONS ---------
+lib =  r'/srv01/technion/shitay/Code/classifying_response_to_immunotherapy/utilities/droplet_dataset'
+lib2 = r'/srv01/technion/shitay/Code/classifying_response_to_immunotherapy/utilities'
+lib3 = r'/srv01/technion/shitay/Code/classifying_response_to_immunotherapy/data_analysis'
+lib4 = r'/srv01/technion/shitay/Code/classifying_response_to_immunotherapy'
+lib5 = r'/srv01/technion/shitay/Code/classifying_response_to_immunotherapy/DL'
+sys.path.append(lib)
+sys.path.append(lib2)
+sys.path.append(lib3)
+sys.path.append(lib4)
+sys.path.append(lib5)
 from utilities.droplet_dataset import *
 import numpy as np
 import pickle
@@ -23,10 +34,10 @@ from DL.Mars_seq_DL.data_loading import extract_droplet_data_from_pickle
 from os.path import join
 
 
-ROW_SAMPLES_PATH = fr'D:\Technion studies\Keren Laboratory\Data\droplet_seq\ROW_DATA'
+ROW_SAMPLES_PATH = r'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\Data\droplet_seq\new_data_3.10.21\ROW_DATA'
 # OUT_FOLDER = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\classifying_cell_types\2_3.3.21'
-OUT_FOLDER = r'D:\Technion studies\Keren Laboratory\python_playground\outputs\classifying_cell_types\dummy'
-MARKERS_PATH = r'D:\Technion studies\Keren Laboratory\Data\tables\ImmuneCellsMarkersUpdated_12.11.20.xlsx'
+OUT_FOLDER = r'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\new_data_3.10.21_outputs\classifying_cell_types\4.10.21'
+MARKERS_PATH = r'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\Data\tables\ImmuneCellsMarkersUpdated_12.11.20.xlsx'
 
 
 CANCER_MARKERS = {'tumor':  ['MLANA', 'PMEL', 'TYR', 'MITF', 'AXL']}

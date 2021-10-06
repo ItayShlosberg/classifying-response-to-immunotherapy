@@ -770,3 +770,4 @@ class Cell_information:
         self.is_epithelial = False
         self.should_be_removed = False
         self.comment = None
+        self.is_responder = False
