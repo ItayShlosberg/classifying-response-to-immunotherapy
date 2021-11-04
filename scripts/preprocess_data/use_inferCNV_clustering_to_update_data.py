@@ -66,20 +66,20 @@ from utilities.general_helpers import intersection_of_lists
 
 # In that path all pkl of the updated properties will be saved.
 # OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\update_runs\21.2.21'
-OUTPUT_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\new_data_3.10.21_outputs\inferCNV\update_runs\4.11.21'
+OUTPUT_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\inferCNV\update_runs\4.11.21'
 
 # path for samples which will be used to update. Important: taking the last-updated scrublet output. (after all other QC processes).
-ROW_SAMPLES_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\Data\droplet_seq\new_data_3.10.21\ROW_DATA'
-SAMPLES_INFORMATION_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\new_data_3.10.21_outputs\scrublet\6.10.21'
+ROW_SAMPLES_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\Data\droplet_seq\ROW_DATA'
+SAMPLES_INFORMATION_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\scrublet\4.3.21'
 
-INFERCNV_SAMPLES_PATH = r'D:\inferCNV\executions\6.10.21'
+INFERCNV_SAMPLES_PATH = r'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\inferCNV\executions\all_data_31.12.20'
 # path of folder where all samples having cell needed be removed have PKL file containing all barcodes of the cell needed be removed.
-IMMUNE_CELLS_REMOVAL_PATH = r'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\new_data_3.10.21_outputs\inferCNV\analysis_conclusions\immune_clustering'
+IMMUNE_CELLS_REMOVAL_PATH = r'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\inferCNV\analysis_conclusions\immune_clustering'
 
 # Tumor table contains row for each sample splioting the tumor cells (Not immune cells) into cluster ##sorted by InferCNV output##
-TUMOR_TABLE_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\new_data_3.10.21_outputs\inferCNV\analysis_conclusions\tumor_classifying_clusters.xlsx'
+TUMOR_TABLE_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\inferCNV\analysis_conclusions\tumor_classifying_clusters.xlsx'
 # Immune table contains row for each sample that have processed, if there are cells needed to be removed it's indicated in cluster-type.
-IMMUNE_TABLE_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\new_data_3.10.21_outputs\inferCNV\analysis_conclusions\immune_classifying_clusters.xlsx'
+IMMUNE_TABLE_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\inferCNV\analysis_conclusions\immune_classifying_clusters.xlsx'
 # CellBender csv, barcodes of empty cells. should be marked as cellbender empty
 EMPTY_BARCODES_PATH = r'C:\Users\KerenYlab\Desktop\Technion studies\Keren Laboratory\python_playground\outputs\CellBender\empty_droplets_barcodes_v2.csv'
 

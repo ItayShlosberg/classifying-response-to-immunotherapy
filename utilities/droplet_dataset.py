@@ -362,6 +362,7 @@ class Cohort_RNAseq:
             return self[item]
 
         if isinstance(item, list):
+            # IMPORTANT NOTE: the lists - [0,1], [0] are not supported !!!!!!
             # identifies if we are dealing with binary indexes or explicit indexes.
             if sum([(ii == 0 or ii == 1) for ii in item]) == len(item):
                 # converts to explicit indexes.
