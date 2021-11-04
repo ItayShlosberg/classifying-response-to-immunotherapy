@@ -4,7 +4,47 @@ from utilities.general_helpers import *
 import pandas as pd
 import pickle
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_auc_score
+import xgboost as xgb
 
+############# DROPLETseq #############
+class DROPLETseq_Enhanced_XGboost:
+    def __init__(self, num_round, early_stopping_rounds, k_folds):
+        self.params = {'max_depth': 20,
+                       'eta': 1,
+                       'objective': 'binary:logistic',
+                       'nthread': 4,
+                       'eval_metric': 'auc'}
+        self.num_round = num_round
+        self.early_stopping_rounds = early_stopping_rounds
+        self.k_folds = k_folds
+        self.model_layers = []
+        self.patient_prediction_threshold = None
+        self.cells_presictions_threshold = None
+        self.model = xgb.XGBClassifier(n_estimators=num_round, learning_rate=0.16, max_depth=15, use_label_encoder=False)
+
+    def train(self, X_train, y_train, verbose=False):
+        self.model.fit(X_train, y_train)
+
+
+    def inference(self, X_test, verbose=False):
+        y_pred = self.model.predict(X_test)
+        return y_pred
+
+    def save_model_in_pkl(self, path, filename="Enhanced_XGboost_Model.pkl"):
+        """
+        Save model local in PKL file.
+        :param path: where the model be saved
+        :param filename: name of the new file'll be created.
+        """
+        pickle.dump(self, open(os.path.join(path, filename), "wb"))
+
+
+
+
+
+
+
+############# SMARTseq #############
 
 def pick_best_threshold(labels, predictions_probs):
     """
@@ -45,7 +85,7 @@ def patients_average_cells_predictions(rna_seq_dataset, pred_prob):
     return patients_labels, patients_predictions_probs, df_groupby_patients
 
 
-class Enhanced_XGboost:
+class smartseq_Enhanced_XGboost:
     def __init__(self, num_round, early_stopping_rounds, k_folds):
         self.params = {'max_depth': 20,
                        'eta': 1,
@@ -154,7 +194,7 @@ class Enhanced_XGboost:
 
 
 
-class hands_on_Enhanced_XGboost:
+class smartseq_hands_on_Enhanced_XGboost:
     """
     Hands-on: full-control of the hyper-parameters.
     """

@@ -17,11 +17,14 @@ sys.path.append(lib4)
 sys.path.append(lib5)
 from utilities.droplet_dataset import *
 from DL.Mars_seq_DL.data_loading import extract_droplet_data_from_pickle
+from utilities.droplet_dataset import loading_sample
 from os.path import join
 
 
-INPUT_DIR = r'/storage/md_keren/shitay/Data/droplet_seq/new_data_3.10.21/PYTHON_OBJECTS'
-OUTPUT_DIR = r'/storage/md_keren/shitay/outputs/new_data_3.10.21_outputs/inferCNV/converted_data_6.10.20'
+ROW_SAMPLES_PATH = r'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\Data\droplet_seq\new_data_3.10.21\ROW_DATA'
+SAMPLES_INFORMATION_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\new_data_3.10.21_outputs\scrublet\6.10.21'
+
+OUTPUT_DIR = r'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\new_data_3.10.21_outputs\inferCNV\converted_data_6.10.20'
 
 def convert_matrix(rna_sample, sample_id):
 
@@ -65,7 +68,7 @@ def create_annotations(rna_sample, sample_id):
 
 
 def convert_all_samples():
-    samples = [subfolder for subfolder in os.listdir(INPUT_DIR)]
+    samples = [subfolder for subfolder in os.listdir(ROW_SAMPLES_PATH)]
 
     # Extract ImmuneCellsMarkersUpdated Excel file from PC and load it into DataFrame.
 
@@ -75,8 +78,10 @@ def convert_all_samples():
         sample_id = sample_id[:-4]
         print(sample_id)
         # Extracts one of the samples from PC
-        sample_path = join(INPUT_DIR, f'{sample_id}.pkl')
-        rna_sample = extract_droplet_data_from_pickle(sample_path)
+        # sample_path = join(INPUT_DIR, f'{sample_id}.pkl')
+        # rna_sample = extract_droplet_data_from_pickle(sample_path)
+        rna_sample = loading_sample(row_data_path=join(ROW_SAMPLES_PATH, f'{sample_id}.pkl'),
+                                    cells_information_path=join(SAMPLES_INFORMATION_PATH, f'{sample_id}.pkl'))
 
         convert_matrix(rna_sample, sample_id)
         create_annotations(rna_sample, sample_id)

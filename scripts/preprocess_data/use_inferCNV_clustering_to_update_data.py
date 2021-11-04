@@ -14,6 +14,9 @@ Update 6.5.21:
 - specify contaminated cells in immune compartment (CSV)- moved to stromal compartment
 Update 24.5.21:
 - specify contaminated cells in immune compartment (CSV, kmeans - cluster #10, in k=10) - moved to epithelial compartment
+update 4.11.21:
+-  we usually remove samples with a low number of genes (<500), but only if they do not have neutrophil markers.
+   Neutrophil are usually small and if we remove all cells with <500 genes we will lose them.
 
 
 ---------------------------------------------
@@ -59,29 +62,30 @@ from os.path import join
 from utilities.general_helpers import *
 from termcolor import colored
 from utilities.droplet_dataset import loading_sample
+from utilities.general_helpers import intersection_of_lists
 
 # In that path all pkl of the updated properties will be saved.
 # OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\update_runs\21.2.21'
-OUTPUT_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\update_runs\26.6.21'
+OUTPUT_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\new_data_3.10.21_outputs\inferCNV\update_runs\4.11.21'
 
 # path for samples which will be used to update. Important: taking the last-updated scrublet output. (after all other QC processes).
-ROW_SAMPLES_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren Laboratory\Data\droplet_seq\ROW_DATA'
-SAMPLES_INFORMATION_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren Laboratory\python_playground\outputs\scrublet\4.3.21'
+ROW_SAMPLES_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\Data\droplet_seq\new_data_3.10.21\ROW_DATA'
+SAMPLES_INFORMATION_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\new_data_3.10.21_outputs\scrublet\6.10.21'
 
-INFERCNV_SAMPLES_PATH = r'C:\Users\KerenYlab\Desktop\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\executions\all_data_31.12.20'
+INFERCNV_SAMPLES_PATH = r'D:\inferCNV\executions\6.10.21'
 # path of folder where all samples having cell needed be removed have PKL file containing all barcodes of the cell needed be removed.
-IMMUNE_CELLS_REMOVAL_PATH = r'C:\Users\KerenYlab\Desktop\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\analysis_conclusions\immune_clustering'
+IMMUNE_CELLS_REMOVAL_PATH = r'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\new_data_3.10.21_outputs\inferCNV\analysis_conclusions\immune_clustering'
 
 # Tumor table contains row for each sample splioting the tumor cells (Not immune cells) into cluster ##sorted by InferCNV output##
-TUMOR_TABLE_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\analysis_conclusions\tumor_classifying_clusters.xlsx'
+TUMOR_TABLE_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\new_data_3.10.21_outputs\inferCNV\analysis_conclusions\tumor_classifying_clusters.xlsx'
 # Immune table contains row for each sample that have processed, if there are cells needed to be removed it's indicated in cluster-type.
-IMMUNE_TABLE_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\analysis_conclusions\immune_classifying_clusters.xlsx'
+IMMUNE_TABLE_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\new_data_3.10.21_outputs\inferCNV\analysis_conclusions\immune_classifying_clusters.xlsx'
 # CellBender csv, barcodes of empty cells. should be marked as cellbender empty
 EMPTY_BARCODES_PATH = r'C:\Users\KerenYlab\Desktop\Technion studies\Keren Laboratory\python_playground\outputs\CellBender\empty_droplets_barcodes_v2.csv'
 
 # Potential contaminated cells, we need to remove these cells from the immune compartment and move them to the stroma
 # one, as they could definitely be related to this phenomenon where fibroblast “ate” the neutrophils as this is a common
-# feature of removing dying cells.
+# feature of removing dying ce  lls.
 CONTAMINATED_FIBROBLAST_CELLS_PATH = r'C:\Users\KerenYlab\Desktop\Technion studies\Keren Laboratory\Data\tables\kmeans_conclusion_tables\stroma_contaminated_cells_kmeans_k11_cluster7_expressing_neut.csv'
 
 # Potential contaminated cells, we need to remove these cells from the immune compartment and move them to
@@ -92,10 +96,10 @@ CONTAMINATED_EPITHELIAL_CELLS_KMEANS10_5_21_PATH = r'C:\Users\KerenYlab\Desktop\
 # the epithelial one, as there were epithelial markers in cluster #12 in k=15. (kmeans 24.5.21)
 CONTAMINATED_EPITHELIAL_CELLS_KMEANS24_5_21_PATH = r'C:\Users\KerenYlab\Desktop\Technion studies\Keren Laboratory\Data\tables\kmeans_conclusion_tables\epithelial_contaminated_cells_kmeans24.5.21_k15_cluster12.csv'
 
-
 # update 10.6.21 - tumor cells can express some immune markers, we need to look at what markers they are allowed to express
 TUMOR_IMMUNE_DOUBLETS_MARKER_POLICY_PATH =  r'C:\Users\KerenYlab\Desktop\Technion studies\Keren Laboratory\Data\tables\tumor_immune_doublets_marker_policy.xlsx'
 
+NON_EMPTY_CELL_MIN_GENES = 500
 
 def extract_sample(sample_id):
     """
@@ -136,12 +140,29 @@ def extract_immune_table():
     return immune_df
 
 
-def perform_tumor_clustering_procedure_of_one_sample():
-    pass
+def remove_empty_cells(rna_sample):
+    """
+    update 4.11.21:
+    we usually remove samples with a low number of genes (<500), but only if they do not have neutrophil markers.
+    Neutrophil are usually small and if we remove all cells with <500 genes we will lose them.
+    :param rna_sample:
+    :return:
+    """
+    # First, find empty cells
+    sample_num_exp_genes_in_cell = np.sum(rna_sample.counts > 0, axis=1)
+    sample_empty_cells_bool = sample_num_exp_genes_in_cell < NON_EMPTY_CELL_MIN_GENES
+    sample_empy_cells = rna_sample[sample_empty_cells_bool]
 
+    # Find cells that are not neutrophils
+    not_netr_indices = [not 'Neutrophils' in gg for gg in rna_sample.cells_information.getattr('cell_type_list')]
+    sample_not_netr = rna_sample[not_netr_indices]
 
-def perform_immune_clustering_procedure_of_one_sample():
-    pass
+    # Take barcodes (identifiers) of overlap between  sample_empy_cells and sample_not_netr:
+    overlap_barcodes = intersection_of_lists(sample_empy_cells.barcodes, sample_not_netr.barcodes)
+    comment = f'Empty cell, less than 500 genes are expressed'
+    cells_for_removal = rna_sample.get_subset_by_barcodes(overlap_barcodes)
+    cells_for_removal.cells_information.setattr('should_be_removed', None, True)
+    cells_for_removal.cells_information.setattr('comment', None, comment)
 
 
 def rearrange_tumor_clusters(tumor_clusters, num_of_cells):
@@ -281,7 +302,8 @@ def update_tumor_cells(sample , tumor_clusters, tumor_barcodes_order):
         #                             in range(len(bool_is_apoptosis))]
         #     moving_to_be_cancer_cells = cluster[moving_to_be_cancer_cells_indices]
         #     moving_to_be_cancer_cells.cells_information.setattr('is_cancer', None, True)
-
+        elif cluster_type == 5:
+            cluster.cells_information.setattr('should_be_removed', None, True)
         else:
             print(colored(f"There is use in cluster type: {cluster_type}, end there is no reference"))
             raise Exception(f"There is use in cluster type: {cluster_type}, end there is no reference")
@@ -381,7 +403,9 @@ def go_over_all_samples(tumor_df, immune_df):
         treat_immune_cells_contaminated_with_epithelial(rna_sample, sample_id,
                                                         CONTAMINATED_EPITHELIAL_CELLS_KMEANS24_5_21_PATH)
 
-
+        # update 4.11.21:
+        # we usually remove samples with a low number of genes (<500), but only if they do not have neutrophil markers.
+        remove_empty_cells(rna_sample)
 
         # Save an updated version of current sample_id with inferCNV changes.
         # pickle.dump((rna_sample), open(join(OUTPUT_PATH, f'{sample_id}.pkl'), 'wb'))

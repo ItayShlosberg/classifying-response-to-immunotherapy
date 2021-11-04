@@ -3,15 +3,20 @@ EXPERIMENT:
   experiments_folder: C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\Data\droplet_seq\DEBUG\Experiments
   save_model: yes # if is 'yes' model'll be saved in experiment folder.
 DATASET:
-  data_path: C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\Data\droplet_seq\DEBUG\100_rand_cells.pkl
-  split_data_path: DATA\patients_divisions\train_patients_0.9percent_all.p # (reproduce datasets) path of division of patients to train/test datasets. leave blank if you want to do a new division
+  data_path: C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\Data\droplet_seq\DEBUG\1000_rand_cells.pkl
+  split_data_path: #C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\MachineLearning\split_data\train_patients_0.9percent_all.p # (reproduce datasets) path of division of patients to train/test datasets. leave blank if you want to do a new division
   save_division_path:  #DATA\patients_divisions\train_patients_0.8percent_all.p # (reproduce datasets) for saving the division of patients. only when split_data_path mode is off (building new data sets). leave blank if you don't want to save.
   test_percent: 0.1 # in case of new division
   variance: 6  # filter genes by variance, 0 - for none
+  protein_coding_genes: # path of protein coding genes if you want to keep them only.
   specific_cell_type: # filter cells by cell type
+  immune_cell_type: #
+  supervised_classification: #
+  prior_to_therapy: # take patient that their biopsy is prior/after to therapy. None - no filter, True - prior, False - after
   patients_type: ALL # ALL/pre/post
+  shuffle: False #
 XGBOOST:
   k_folds: 5 # num of folds for k folds
-  num_round: 10
+  num_round: 50
   early_stopping_rounds: 10
   model_path:

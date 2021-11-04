@@ -123,6 +123,9 @@ def binary_search(lst, target):
 
 
 def visualization_confusion_matrix(labels, predictions, title=None, save_path=None, display_labels=None):
+    from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+    import matplotlib
+
     cm = confusion_matrix(labels, predictions)
     if display_labels:
         disp = ConfusionMatrixDisplay(confusion_matrix=cm,
@@ -130,7 +133,6 @@ def visualization_confusion_matrix(labels, predictions, title=None, save_path=No
     else:
         disp = ConfusionMatrixDisplay(confusion_matrix=cm,
                                       display_labels=['non-response', 'response'])
-    import matplotlib
     _, ax = plt.subplots()
     if title:
         ax.set_title(title)

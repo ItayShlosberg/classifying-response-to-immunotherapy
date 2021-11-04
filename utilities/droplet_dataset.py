@@ -9,8 +9,10 @@ import pickle
 from DL.Mars_seq_DL.data_loading import *
 import pandas as pd
 import time
-CELL_TYPE_LIST = ['T cells', 'CD4 helper T cells', 'CD8 Cytotoxic T cells', 'Regulatory T cells', 'Regulatory CD4 T cells', 'Regulatory CD8 T cells', 'Regulatory CD4_CD8 T cells', 'NKT cells', 'NK cells', 'B cells', 'Activated T cells', 'Senescence T cells', 'Terminal effector', 'Exhausted T cells', 'Stem_like T cells', 'Memory T cells', 'Memory CD4 T cells', 'Memory CD8 T cells', 'Memory CD4_CD8 T cells', 'Macrophage_immature', 'Macrophage_mature', 'Monocyte_immature', 'Monocyte_mature', 'cDCs_dendritic_cells', 'pDCs', 'myeloid cells_general_immature', 'myeloid cells_general_mature', 'Neutrophils', 'Granolocytes', 'Immune_general']
+from anndata import AnnData
 
+CELL_TYPE_LIST = ['T cells', 'CD4 helper T cells', 'CD8 Cytotoxic T cells', 'Regulatory T cells', 'Regulatory CD4 T cells', 'Regulatory CD8 T cells', 'Regulatory CD4_CD8 T cells', 'NKT cells', 'NK cells', 'B cells', 'Activated T cells', 'Senescence T cells', 'Terminal effector', 'Exhausted T cells', 'Stem_like T cells', 'Memory T cells', 'Memory CD4 T cells', 'Memory CD8 T cells', 'Memory CD4_CD8 T cells', 'Macrophage_immature', 'Macrophage_mature', 'Monocyte_immature', 'Monocyte_mature', 'cDCs_dendritic_cells', 'pDCs', 'myeloid cells_general_immature', 'myeloid cells_general_mature', 'Neutrophils', 'Granolocytes', 'Immune_general']
+MYELOID_CLUSTER_IDX = 5     # myeloid cluster
 
 def normalize_data(counts):
     """
@@ -161,7 +163,6 @@ def loading_sample(row_data_path, cells_information_path=None):
 
 def get_requested_subset(cohort, SUBSET):
     # ANALYSIS PARAMS for MYELOIDS, taken from summary of immune clustering analysis - cohort 26.6.21
-    MYELOID_CLUSTER_IDX = 5     # myeloid cluster
     IMMUNE_CLUSTERING_PATH = r'/storage/md_keren/shitay/outputs/clustering/immune/summaries/26.6.21/immune_kmeans_26.6.21_clusters_mapping.csv'
 
     if SUBSET is None:
@@ -182,6 +183,25 @@ def get_requested_subset(cohort, SUBSET):
         return cohort[cytotoxic_T_cells_indices]
     print(f'ERROR! No valid SUBSET value was passed!')
     raise Exception(f'ERROR! the SUBSET value is not valid!')
+
+class AnnCohort:
+    def __init__(self, cohort):
+        if isinstance(cohort, Cohort_RNAseq):
+            self.cohort = AnnData(cohort.counts)
+            self.cohort.var['gene'] = cohort.gene_names
+            self.cohort.var['feature'] = cohort.features
+
+            self.cohort.obs['sample'] = cohort.samples
+            self.cohort.obs['barcode'] = cohort.barcodes
+
+            for k, v in cohort.cells_information[0].__dict__.items():
+                self.cohort.obs[k] = cohort.cells_information.getattr(k)
+
+        if isinstance(cohort, AnnData):
+            self.cohort = cohort
+
+    def __getitem__(self, item):
+        return AnnCohort(self.cohort[item])
 
 
 class Cohort_RNAseq:
@@ -225,8 +245,6 @@ class Cohort_RNAseq:
         if cells_information:
             self.cells_information = cells_information
 
-
-
     def get_subset_by_identifiers(self, sample_list, barcodes_list):
         """
         On 8.5.21 we noticed that in sample the barcodes of the cells are unique, cell barcodes when looking at the
@@ -240,6 +258,10 @@ class Cohort_RNAseq:
         mapping = list(zip(self.samples, self.barcodes))
         cell_idxs = [mapping.index(pair_identifier) for pair_identifier in zip(sample_list, barcodes_list)]
 
+        return self[cell_idxs]
+
+    def get_subset_by_sample_list(self, requested_samples):
+        cell_idxs = [idx for idx, s in enumerate(self.samples) if s in requested_samples]
         return self[cell_idxs]
 
     def get_subset_by_barcodes(self, barcode_list):
@@ -377,6 +399,22 @@ class Cohort_RNAseq:
                              self.features,
                              self.samples + other.samples,
                              self.cells_information + other.cells_information)
+
+    def convert_to_AnnDataCohort(self):
+        return AnnCohort(self)
+
+    def convert_to_AnnData(self):
+        annCohort = AnnData(self.counts)
+        annCohort.var['gene'] = self.gene_names
+        annCohort.var['feature'] = self.features
+
+        annCohort.obs['sample'] = self.samples
+        annCohort.obs['barcode'] = self.barcodes
+
+        for k, v in self.cells_information[0].__dict__.items():
+            annCohort.obs[k] = self.cells_information.getattr(k)
+
+        return annCohort
 
     def get_cancer_immune_stroma_map(self):
         """
