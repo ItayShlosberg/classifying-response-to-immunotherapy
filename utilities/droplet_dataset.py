@@ -163,7 +163,11 @@ def loading_sample(row_data_path, cells_information_path=None):
 
 def get_requested_subset(cohort, SUBSET):
     # ANALYSIS PARAMS for MYELOIDS, taken from summary of immune clustering analysis - cohort 26.6.21
-    IMMUNE_CLUSTERING_PATH = r'/storage/md_keren/shitay/outputs/clustering/immune/summaries/26.6.21/immune_kmeans_26.6.21_clusters_mapping.csv'
+    # IMMUNE_CLUSTERING_PATH = r'/storage/md_keren/shitay/outputs/clustering/immune/summaries/26.6.21/immune_kmeans_26.6.21_clusters_mapping.csv'
+    # new clustering mapping  path (integrated data M97-M173)
+    IMMUNE_CLUSTERING_PATH = r'/storage/md_keren/shitay/outputs/clustering/immune/summaries/4.11.21/immune_kmeans_integrated_4.11.21_clusters_mapping.csv'
+    print(f'IMMUNE CLUSTERING in path \t {IMMUNE_CLUSTERING_PATH} \t is used for defining which cells are myeloids')
+    print(f'Cluster {MYELOID_CLUSTER_IDX} is defined to be myeloids')
 
     if SUBSET is None:
         print(f'No subset request was given')
