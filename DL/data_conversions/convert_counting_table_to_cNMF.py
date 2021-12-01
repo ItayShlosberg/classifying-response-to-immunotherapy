@@ -2,10 +2,14 @@
 Run this script to create a file which will be processed in cNMF.py
 
 several instructions:
-1. the counting table shouldn't be normalized, since there is a normalization stage which different from our method
+1. the counting table shouldn't be normalized, since there is a normalization stage which is different from our method
 during the cNMF preparation process.
+ - Filter of only tumor cells is being done here during this process.
+ - Filter protein_coding genes is being done here during this process.
+ So, you should pass the cohort_non_normalized object.
 
-2. Only genes with a total count != 0 should be taken.
+2. Only genes with a total count != 0 should be taken. it is being taken in account during this conversion process,
+    you don't need to take care of it before.
 """
 
 # ------- SERVER EXTENSIONS ---------
@@ -26,8 +30,9 @@ import pickle
 import numpy as np
 
 # You should put a path of non_normalize cohort with immune and tumor cells without variance filter.
-COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/non_normalized/6.21/cohort_non_normalized_26.6.21.pkl'
-OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/cNMF/conversions/tumor_filtered_cNMF_26.6.21.txt'
+# COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/non_normalized/6.21/cohort_non_normalized_26.6.21.pkl'
+COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/M97_M173/cohort/non_normalized/4.11.21/cohort_non_normalized_4.11.21.pkl'
+OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/cNMF/conversions/tumor_filtered_cNMF_4.11.21.txt'
 CONVERT_TUMOR = True     # False for immune
 
 

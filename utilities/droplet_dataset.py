@@ -9,7 +9,7 @@ import pickle
 from DL.Mars_seq_DL.data_loading import *
 import pandas as pd
 import time
-from anndata import AnnData
+# from anndata import AnnData
 
 CELL_TYPE_LIST = ['T cells', 'CD4 helper T cells', 'CD8 Cytotoxic T cells', 'Regulatory T cells', 'Regulatory CD4 T cells', 'Regulatory CD8 T cells', 'Regulatory CD4_CD8 T cells', 'NKT cells', 'NK cells', 'B cells', 'Activated T cells', 'Senescence T cells', 'Terminal effector', 'Exhausted T cells', 'Stem_like T cells', 'Memory T cells', 'Memory CD4 T cells', 'Memory CD8 T cells', 'Memory CD4_CD8 T cells', 'Macrophage_immature', 'Macrophage_mature', 'Monocyte_immature', 'Monocyte_mature', 'cDCs_dendritic_cells', 'pDCs', 'myeloid cells_general_immature', 'myeloid cells_general_mature', 'Neutrophils', 'Granolocytes', 'Immune_general']
 MYELOID_CLUSTER_IDX = 5     # myeloid cluster
@@ -166,14 +166,14 @@ def get_requested_subset(cohort, SUBSET):
     # IMMUNE_CLUSTERING_PATH = r'/storage/md_keren/shitay/outputs/clustering/immune/summaries/26.6.21/immune_kmeans_26.6.21_clusters_mapping.csv'
     # new clustering mapping  path (integrated data M97-M173)
     IMMUNE_CLUSTERING_PATH = r'/storage/md_keren/shitay/outputs/clustering/immune/summaries/4.11.21/immune_kmeans_integrated_4.11.21_clusters_mapping.csv'
-    print(f'IMMUNE CLUSTERING in path \t {IMMUNE_CLUSTERING_PATH} \t is used for defining which cells are myeloids')
-    print(f'Cluster {MYELOID_CLUSTER_IDX} is defined to be myeloids')
 
     if SUBSET is None:
         print(f'No subset request was given')
         return cohort
     elif SUBSET == 'MYELOIDS':
         print(f'Will be performed on myeloids')
+        print(f'IMMUNE CLUSTERING in path \t {IMMUNE_CLUSTERING_PATH} \t is used for defining which cells are myeloids')
+        print(f'Cluster {MYELOID_CLUSTER_IDX} is defined to be myeloids')
 
         immune_mapping = pd.read_csv(IMMUNE_CLUSTERING_PATH)[['Sample', 'Barcode', 'Cluster']]
         myeloid_indices = immune_mapping[immune_mapping['Cluster'] == MYELOID_CLUSTER_IDX][['Sample', 'Barcode']].values

@@ -24,7 +24,7 @@ from os.path import join
 ROW_SAMPLES_PATH = r'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\Data\droplet_seq\new_data_3.10.21\ROW_DATA'
 SAMPLES_INFORMATION_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\new_data_3.10.21_outputs\scrublet\6.10.21'
 
-OUTPUT_DIR = r'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\new_data_3.10.21_outputs\inferCNV\converted_data_6.10.20'
+OUTPUT_DIR = r'D:\inferCNV\conversions\M147_M173'
 
 def convert_matrix(rna_sample, sample_id):
 

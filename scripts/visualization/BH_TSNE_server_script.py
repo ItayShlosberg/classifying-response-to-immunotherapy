@@ -27,16 +27,16 @@ from utilities.droplet_dataset import get_requested_subset
 
 
 # OUTPUT_DIR = r'/storage/md_keren/shitay/outputs/TSNE/cohort_26.6.21/cytotoxic_t_cells'
-OUTPUT_DIR = r'/storage/md_keren/shitay/outputs/TSNE/cohort_26.6.21/2.9.21'
+OUTPUT_DIR = r'/storage/md_keren/shitay/outputs/TSNE/cohort_4.11.21/tumor'
 
 # in use only in 'run_bh_tsne' function
-FILE_NAME = r'immune_cells_bhtsne_26.6.21.pkl'
-CSV_SUFFIX = r'immune_cells_bhtsne_26.6.21.csv'
+FILE_NAME = r'tumor_bhtsne_4.11.21.pkl'
+CSV_SUFFIX = r'tumor_bhtsne_4.11.21.csv'
 PERPLEXITY = 30.0    # default=30.0
 
 # cohort should be normalized and variance filtered
-COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/normalized/6.21/cohort_normalized_26.6.21_protein_coding_genes.pkl'
-SUBSET = 'None' # None - all cells, MYELOIDS/CYTOTOXIC_T_CELLS
+COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/M97_M173/cohort/normalized/4.11.21/tumor_cells_normalized_4.11.21_4k_genes.pkl'
+SUBSET = None # 'None' # None - all cells, MYELOIDS/CYTOTOXIC_T_CELLS
 
 
 def run_bh_tsne():
@@ -45,8 +45,8 @@ def run_bh_tsne():
     # print(f'ARG {sys.argv[1]}')
 
     cohort = pickle.load(open(COHORT_PATH, 'rb'))
-    # if SUBSET:
-    #     cohort = get_requested_subset(cohort, SUBSET)
+    if SUBSET:
+        cohort = get_requested_subset(cohort, SUBSET)
     print(f"Counts shape {cohort.counts.shape}")
 
     PCs = PCA(n_components=10).fit_transform(cohort.counts)
