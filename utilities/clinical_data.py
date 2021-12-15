@@ -138,7 +138,7 @@ def get_constant_cohort(comparison_type=1):
     """
     samples = ['M128', 'M136', 'M111', 'M99', 'M137', 'M147', 'M131', 'M130', 'M162', 'M145',
                'M153', 'M141', 'M107', 'M146', 'M106', 'M161', 'M120', 'M151']
-    melanoma_clinical_data = get_clinical_data()
+    melanoma_clinical_data = get_clinical_data(therapy_translator=therapy_IPI_transletror)
     melanoma_clinical_data = melanoma_clinical_data[melanoma_clinical_data['Patient id'].isin(samples)]
     response = melanoma_clinical_data['response'].values
     melanoma_type = melanoma_clinical_data['Melanoma type'].values
