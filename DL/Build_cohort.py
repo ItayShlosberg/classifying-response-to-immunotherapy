@@ -26,9 +26,9 @@ from utilities.droplet_dataset import loading_sample
 
 
 
-ROW_DATA_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/ROW_DATA'
-CELL_INFORMATION_PATH = r'/storage/md_keren/shitay/Data/inferCNV_data/update_runs/4.11.21'
-OUTPUT = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/non_normalized/4.11.21'
+ROW_DATA_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/M147_M173/ROW_DATA'
+CELL_INFORMATION_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/M147_M173/CELL_INFORMATION/4.11.21'
+OUTPUT = r'/storage/md_keren/shitay/Data/droplet_seq/M147_M173/cohort/non_normalized/4.11.21'
 FILE_NAME = r'cohort_non_normalized_4.11.21.pkl'
 TO_NORMALIZE = False
 

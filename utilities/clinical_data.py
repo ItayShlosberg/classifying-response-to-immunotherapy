@@ -44,7 +44,7 @@ def get_clinical_data(n_samples=71, ICI=None, melanoma_type=None, prior_biopsy=N
                       only_metastasis_sample=False, response=None, therapy_translator=therapy_ICI_translator):
     #  Loads xlsx files
     CLINICAL_LABELS_PATH = r'/storage/md_keren/shitay/Data/tables/clinical_labels.xlsx'
-    MELANOMA_CLINICAL_DATA_PATH = r'/storage/md_keren/shitay/Data/tables/Melanoma_clinical_data_OCT_unportected.xlsx'
+    MELANOMA_CLINICAL_DATA_PATH = r'/storage/md_keren/shitay/Data/tables/Melanoma_clinical_data_12.21_unportected.xlsx'
     print(f'Using clinical table in path:\n {MELANOMA_CLINICAL_DATA_PATH}\n\nand labels:\n{CLINICAL_LABELS_PATH}')
 
     melanoma_clinical_data = pd.read_excel(MELANOMA_CLINICAL_DATA_PATH)
@@ -52,7 +52,7 @@ def get_clinical_data(n_samples=71, ICI=None, melanoma_type=None, prior_biopsy=N
     # takes only first 71 samples, fill Nan and creat dictionary mapping
     melanoma_clinical_data = melanoma_clinical_data.iloc[:n_samples][
         ['Patient id', 'Clinical response', 'Melanoma type', 'Therapy(ies) prior to biopsy', 'Therapy after biopsy',
-         'Primary=1; Metastasis=0']]
+         'Primary=1; Metastasis=0', 'Genotype ']]
     # fill Nans
     melanoma_clinical_data['Melanoma type'] = melanoma_clinical_data['Melanoma type'].fillna('??')
     melanoma_clinical_data['Clinical response'] = melanoma_clinical_data['Clinical response'].fillna('??')
@@ -79,6 +79,9 @@ def get_clinical_data(n_samples=71, ICI=None, melanoma_type=None, prior_biopsy=N
             melanoma_clinical_data['after biopsy'] == 'ICI')
     melanoma_clinical_data = melanoma_clinical_data.drop(
         columns=['Therapy(ies) prior to biopsy', 'Therapy after biopsy', 'Clinical response'])
+    # Convert Genotype - save information only for BRAF: is BRAF mutated or not BRAF mutated
+    melanoma_clinical_data['BRAF'] = melanoma_clinical_data['Genotype '].astype(str).apply(lambda x: True if 'BRAF' in x else False)
+    melanoma_clinical_data = melanoma_clinical_data.drop(columns=['Genotype '])
 
     if not ICI is None:
         melanoma_clinical_data = melanoma_clinical_data[melanoma_clinical_data['ICI'] == ICI]
@@ -133,6 +136,7 @@ def get_constant_cohort(comparison_type=1):
     :param cutaneous_comparison:
     1. NR_Mucosal VS. NR_Cutaneous (drop R cutaneous samples).
     2. NR_Mucosal VS. R_Cutaneous (drop NR cutaneous samples).
+    3. NR_Mucosal VS. NR_Cutaneous and R_Cutaneous (all sub cohort).
 
     :return:
     """
@@ -147,3 +151,5 @@ def get_constant_cohort(comparison_type=1):
         return melanoma_clinical_data[(melanoma_type == 'Mucosal') | ((response == 'NR') & (melanoma_type == 'Cutaneous'))]
     if comparison_type == 2:
         return melanoma_clinical_data[(melanoma_type == 'Mucosal') | ((response == 'R') & (melanoma_type == 'Cutaneous'))]
+    if comparison_type == 3:
+        return melanoma_clinical_data
