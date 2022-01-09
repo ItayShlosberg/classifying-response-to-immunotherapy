@@ -238,3 +238,23 @@ def bold(string):
 def annotate_seaborn_barplot(axs):
     for p in axs.patches:
         axs.annotate(str(np.round(p.get_height(),3)), (p.get_x() * 1.005, p.get_height() * 1.005))
+
+
+def show_values_on_bars(axs):
+    """
+    Seaborn
+    :param axs:
+    :return:
+    """
+    def _show_on_single_plot(ax):
+        for p in ax.patches:
+            _x = p.get_x() + p.get_width() / 2
+            _y = p.get_y() + p.get_height()
+            value = '{:.2f}%'.format(p.get_height())
+            ax.text(_x, _y, value, ha="center")
+
+    if isinstance(axs, np.ndarray):
+        for idx, ax in np.ndenumerate(axs):
+            _show_on_single_plot(ax)
+    else:
+        _show_on_single_plot(axs)

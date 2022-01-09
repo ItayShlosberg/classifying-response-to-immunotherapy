@@ -31,8 +31,9 @@ import numpy as np
 
 # You should put a path of non_normalize cohort with immune and tumor cells without variance filter.
 # COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/non_normalized/6.21/cohort_non_normalized_26.6.21.pkl'
-COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/M97_M173/cohort/non_normalized/4.11.21/cohort_non_normalized_4.11.21.pkl'
-OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/cNMF/conversions/tumor_filtered_cNMF_4.11.21.txt'
+# COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/M97_M173/cohort/non_normalized/4.11.21/cohort_non_normalized_4.11.21.pkl'
+COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/M97_M173/subcohort/non_normalized/1.1.22/sub_cohort_tumor_cells_non_normalized_1.1.22_protein_coding_genes.pkl'
+OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/cNMF/conversions/tumor_filtered_cNMF_subcohort_1.1.22.txt'
 CONVERT_TUMOR = True     # False for immune
 
 

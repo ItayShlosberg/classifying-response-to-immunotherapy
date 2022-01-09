@@ -192,7 +192,24 @@ def find_marker_genes_in_cluster(cluster_data, other_clusters_data, log_FC_thres
     return df
 
 
-def find_markers_in_clusters(data_rna_seq, clusters_indices, log_ratio_threshold = 0.25, pval_threshold=0.05,
+def find_satisfying_list_of_markers_in_cluster(cluster_data, other_clusters_data, log_FC_threshold, pval_threshold,
+                                 min_pct, min_diff_pct, min_markers=30):
+    cluster_markers = find_marker_genes_in_cluster(cluster_data, other_clusters_data, log_FC_threshold, pval_threshold,
+                                                   min_pct, min_diff_pct)
+
+
+    n_loops = 0
+    while len(cluster_markers) < min_markers and n_loops < 3:
+        min_diff_pct = min_diff_pct / 2
+        min_pct = min_pct / 2
+        n_loops += 1
+        cluster_markers = find_marker_genes_in_cluster(cluster_data, other_clusters_data, log_FC_threshold,
+                                                       pval_threshold,
+                                                       min_pct, min_diff_pct)
+    return cluster_markers
+
+
+def find_markers_in_clusters(data_rna_seq, clusters_indices, log_ratio_threshold = 0.5, pval_threshold=0.05,
                              min_pct=0.1, min_diff_pct=0.1):
     """
 
@@ -229,7 +246,7 @@ def get_clusters_indices(df, cohort):
     return cluster_indexes
 
 
-def find_satisfying_list_of_markers_in_clusters(data_rna_seq, clusters_indices, min_markers=30, log_ratio_threshold = 0.25, pval_threshold=0.05,
+def find_satisfying_list_of_markers_in_clusters(data_rna_seq, clusters_indices, min_markers=30, log_ratio_threshold = 0.5, pval_threshold=0.05,
                              min_pct=0.1, min_diff_pct=0.1):
     """
 
@@ -269,4 +286,6 @@ def shows_statistics_in_clusters(Data_RNAseq, clusters_list):
     for cluster_id in set(clusters_list):
         cluster_indices = [idx for idx, ii in enumerate(clusters_list) if ii == cluster_id]
         cluster_samples[cluster_id] = Data_RNAseq[cluster_indices]
+
+
 

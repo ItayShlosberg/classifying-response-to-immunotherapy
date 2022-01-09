@@ -25,7 +25,7 @@ import math
 import matplotlib as plt
 from sklearn.manifold import TSNE
 from scipy.stats import pearsonr
-from scripts.clustering.Clustering_script import *
+from scripts.clustering.kmeans.Clustering_script import *
 
 import pickle
 import pyclustering

@@ -43,12 +43,12 @@ def therapy_IPI_transletror(x):
 def get_clinical_data(n_samples=71, ICI=None, melanoma_type=None, prior_biopsy=None, after_biopsy=None,
                       only_metastasis_sample=False, response=None, therapy_translator=therapy_ICI_translator):
     #  Loads xlsx files
-    CLINICAL_LABELS_PATH = r'/storage/md_keren/shitay/Data/tables/clinical_labels.xlsx'
-    MELANOMA_CLINICAL_DATA_PATH = r'/storage/md_keren/shitay/Data/tables/Melanoma_clinical_data_12.21_unportected.xlsx'
+    CLINICAL_LABELS_PATH = r'/storage/md_keren/shitay/Data/tables/clinical_labels.csv'#.xlsx'
+    MELANOMA_CLINICAL_DATA_PATH = r'/storage/md_keren/shitay/Data/tables/Melanoma_clinical_data_12.21_unportected.csv' #xlsx'
     print(f'Using clinical table in path:\n {MELANOMA_CLINICAL_DATA_PATH}\n\nand labels:\n{CLINICAL_LABELS_PATH}')
 
-    melanoma_clinical_data = pd.read_excel(MELANOMA_CLINICAL_DATA_PATH)
-    clinical_labels = pd.read_excel(CLINICAL_LABELS_PATH)
+    melanoma_clinical_data = pd.read_csv(MELANOMA_CLINICAL_DATA_PATH)
+    clinical_labels = pd.read_csv(CLINICAL_LABELS_PATH)
     # takes only first 71 samples, fill Nan and creat dictionary mapping
     melanoma_clinical_data = melanoma_clinical_data.iloc[:n_samples][
         ['Patient id', 'Clinical response', 'Melanoma type', 'Therapy(ies) prior to biopsy', 'Therapy after biopsy',

@@ -165,7 +165,7 @@ def get_requested_subset(cohort, SUBSET):
     # ANALYSIS PARAMS for MYELOIDS, taken from summary of immune clustering analysis - cohort 26.6.21
     # IMMUNE_CLUSTERING_PATH = r'/storage/md_keren/shitay/outputs/clustering/immune/summaries/26.6.21/immune_kmeans_26.6.21_clusters_mapping.csv'
     # new clustering mapping  path (integrated data M97-M173)
-    IMMUNE_CLUSTERING_PATH = r'/storage/md_keren/shitay/outputs/clustering/immune/summaries/4.11.21/immune_kmeans_integrated_4.11.21_clusters_mapping.csv'
+    IMMUNE_CLUSTERING_PATH = r'/storage/md_keren/shitay/outputs/clustering/immune/summary/4.11.21/immune_kmeans_integrated_4.11.21_clusters_mapping.csv'
 
     if SUBSET is None:
         print(f'No subset request was given')
@@ -260,7 +260,7 @@ class Cohort_RNAseq:
         :return: a subset cohort, Cohort_RNAseq object of the cells of the given barcodes.
         """
         mapping = list(zip(self.samples, self.barcodes))
-        cell_idxs = [mapping.index(pair_identifier) for pair_identifier in zip(sample_list, barcodes_list)]
+        cell_idxs = [mapping.index(pair_identifier) for pair_identifier in zip(sample_list, barcodes_list) if pair_identifier in mapping]
 
         return self[cell_idxs]
 

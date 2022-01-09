@@ -27,15 +27,16 @@ from utilities.droplet_dataset import get_requested_subset
 
 
 # OUTPUT_DIR = r'/storage/md_keren/shitay/outputs/TSNE/cohort_26.6.21/cytotoxic_t_cells'
-OUTPUT_DIR = r'/storage/md_keren/shitay/outputs/TSNE/cohort_4.11.21/tumor'
+OUTPUT_DIR = r'/storage/md_keren/shitay/outputs/TSNE/subcohort_1.1.22/tumor'
 
 # in use only in 'run_bh_tsne' function
-FILE_NAME = r'tumor_bhtsne_4.11.21.pkl'
-CSV_SUFFIX = r'tumor_bhtsne_4.11.21.csv'
+FILE_NAME = r'tumor_bhtsne_1.1.22.pkl'
+CSV_SUFFIX = r'tumor_bhtsne_1.1.22.csv'
 PERPLEXITY = 30.0    # default=30.0
 
-# cohort should be normalized and variance filtered
-COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/M97_M173/cohort/normalized/4.11.21/tumor_cells_normalized_4.11.21_4k_genes.pkl'
+# cohort should be normalized and variance filtered (4k genes)
+COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/M97_M173/subcohort/normalized/1.1.22/subcohort_tumor_cells_normalized_1.1.22_4k_genes.pkl'
+
 SUBSET = None # 'None' # None - all cells, MYELOIDS/CYTOTOXIC_T_CELLS
 
 
