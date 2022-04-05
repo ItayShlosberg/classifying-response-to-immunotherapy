@@ -43,11 +43,11 @@ def therapy_IPI_transletror(x):
 def get_clinical_data(n_samples=71, ICI=None, melanoma_type=None, prior_biopsy=None, after_biopsy=None,
                       only_metastasis_sample=False, response=None, therapy_translator=therapy_ICI_translator):
     #  Loads xlsx files
-    CLINICAL_LABELS_PATH = r'/storage/md_keren/shitay/Data/tables/clinical_labels.csv'#.xlsx'
-    MELANOMA_CLINICAL_DATA_PATH = r'/storage/md_keren/shitay/Data/tables/Melanoma_clinical_data_12.21_unportected.csv' #xlsx'
+    CLINICAL_LABELS_PATH = r'/storage/md_keren/shitay/Data/tables/clinical_tables/clinical_labels.csv'#.xlsx'
+    MELANOMA_CLINICAL_DATA_PATH = r'/storage/md_keren/shitay/Data/tables/clinical_tables/Melanoma_clinical_data_3.22_unprotected.xlsx'
     print(f'Using clinical table in path:\n {MELANOMA_CLINICAL_DATA_PATH}\n\nand labels:\n{CLINICAL_LABELS_PATH}')
 
-    melanoma_clinical_data = pd.read_csv(MELANOMA_CLINICAL_DATA_PATH)
+    melanoma_clinical_data = pd.read_excel(MELANOMA_CLINICAL_DATA_PATH, engine='openpyxl')
     clinical_labels = pd.read_csv(CLINICAL_LABELS_PATH)
     # takes only first 71 samples, fill Nan and creat dictionary mapping
     melanoma_clinical_data = melanoma_clinical_data.iloc[:n_samples][
@@ -94,7 +94,7 @@ def get_clinical_data(n_samples=71, ICI=None, melanoma_type=None, prior_biopsy=N
     if not response is None:
         melanoma_clinical_data = melanoma_clinical_data[melanoma_clinical_data['response'] == response]
 
-    return melanoma_clinical_data.reset_index()
+    return melanoma_clinical_data.reset_index().drop(columns=['index'])
 
 
 def get_clinical_subdata(n_R_muc, n_NR_muc, n_R_cut, n_NR_cut, n_samples=71, ICI=None, melanoma_type=None, prior_biopsy=None, after_biopsy=None,
@@ -143,7 +143,7 @@ def get_constant_cohort(comparison_type=1):
     samples = ['M128', 'M136', 'M111', 'M99', 'M137', 'M147', 'M131', 'M130', 'M162', 'M145',
                'M153', 'M141', 'M107', 'M146', 'M106', 'M161', 'M120', 'M151']
     melanoma_clinical_data = get_clinical_data(therapy_translator=therapy_IPI_transletror)
-    melanoma_clinical_data = melanoma_clinical_data[melanoma_clinical_data['Patient id'].isin(samples)]
+    melanoma_clinical_data = melanoma_clinical_data[melanoma_clinical_data['Patient id'].isin(samples)].reset_index().drop(columns=['index'])
     response = melanoma_clinical_data['response'].values
     melanoma_type = melanoma_clinical_data['Melanoma type'].values
 

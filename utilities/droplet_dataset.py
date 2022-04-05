@@ -9,6 +9,7 @@ import pickle
 from DL.Mars_seq_DL.data_loading import *
 import pandas as pd
 import time
+import scipy
 # from anndata import AnnData
 
 CELL_TYPE_LIST = ['T cells', 'CD4 helper T cells', 'CD8 Cytotoxic T cells', 'Regulatory T cells', 'Regulatory CD4 T cells', 'Regulatory CD8 T cells', 'Regulatory CD4_CD8 T cells', 'NKT cells', 'NK cells', 'B cells', 'Activated T cells', 'Senescence T cells', 'Terminal effector', 'Exhausted T cells', 'Stem_like T cells', 'Memory T cells', 'Memory CD4 T cells', 'Memory CD8 T cells', 'Memory CD4_CD8 T cells', 'Macrophage_immature', 'Macrophage_mature', 'Monocyte_immature', 'Monocyte_mature', 'cDCs_dendritic_cells', 'pDCs', 'myeloid cells_general_immature', 'myeloid cells_general_mature', 'Neutrophils', 'Granolocytes', 'Immune_general']
@@ -264,6 +265,22 @@ class Cohort_RNAseq:
 
         return self[cell_idxs]
 
+    def filter_cohort_from(self, sample_list, barcodes_list):
+        """
+        On 16.3.21 we needed to take a subset of cohort filtered of contaminated cells. we had a list of contaminated
+        cells and wanted to exclude them from our cohorts.
+        therefore here we give an option to get a subset of the cohort by specifying the barcodes and the
+        respective sample ids of the cells we would like to exclude from the cohort.
+        the lists must be the same length, sample_list[i] is the sam[le_if of barcodes_list[i]
+        :param sample_list: list of samples id
+        :param barcodes_list:list of barcodes of cells
+        :return: a subset cohort, Cohort_RNAseq object with contaminated cells filtered out.
+        """
+        mapping = list(zip(self.samples, self.barcodes))
+        cell_idxs = [cell_idx for cell_idx, pair_identifier in enumerate(mapping) if not pair_identifier in list(zip(sample_list, barcodes_list))]
+
+        return self[cell_idxs]
+
     def get_subset_by_sample_list(self, requested_samples):
         cell_idxs = [idx for idx, s in enumerate(self.samples) if s in requested_samples]
         return self[cell_idxs]
@@ -462,6 +479,57 @@ class Cohort_RNAseq:
                 map[i] = 3
                 map_str[i] = 'Both'
         return map, map_str
+
+    def import_tSNE(self, TSNE_CSV_PATH):
+        cells_embedded = pd.read_csv(TSNE_CSV_PATH)
+
+        mapping = list(zip(self.samples, self.barcodes))
+        tSNE_coordinates = [tuple(ff) for ff in cells_embedded[['Sample', 'Barcode']].values.tolist()]
+
+        df_indices = [tSNE_coordinates.index(pair_identifier) for pair_identifier in mapping]
+        cells_embedded = cells_embedded.iloc[df_indices]
+        self.tsne_X = cells_embedded.x
+        self.tsne_Y = cells_embedded.y
+
+    def zscore_normalization(self):
+        """
+        For tSNE plot of gene expression
+        normalize counts to range [0, 1]
+        :return:
+        """
+        self.zscore_nor_gene_exp = scipy.stats.zscore(self.counts, axis=0, ddof=1)
+
+    def plot_tsne_gene(self, gene_name, cmap=None):
+        if not cmap:
+            cmap = pickle.load(open(r'/storage/md_keren/shitay/garbage/cmap.pkl', 'rb'))
+        gene_idx =self.gene_names.index(gene_name)
+        sc = plt.scatter(self.tsne_X, self.tsne_Y, cmap=cmap,
+                         c=self.zscore_nor_gene_exp[:, gene_idx], vmin=0, vmax=1., s=0.5, edgecolor='none');
+        plt.colorbar(sc);
+
+    def plot_tsne_genes(self, genes, cmap=None, cell_plot_size=0.5):
+        if not cmap:
+            cmap = pickle.load(open(r'/storage/md_keren/shitay/garbage/cmap.pkl', 'rb'))
+        n_cols = 4 if len(genes)>3 else max(len(genes), 2)
+        n_rows = int(np.ceil(len(genes) / n_cols))
+        fig, axs = plt.subplots(n_rows, n_cols)
+        axs = axs.ravel()
+
+        fig.set_size_inches(15, 4 * int(np.ceil(len(genes) / n_cols)))
+
+        for i, gene in enumerate(genes):
+            axs[i].set_title(f"{gene}")
+            gene_idx = self.gene_names.index(gene)
+            gene_values = self.zscore_nor_gene_exp[:, gene_idx]
+            sc = axs[i].scatter(self.tsne_X, self.tsne_Y,
+                                cmap=cmap, vmin=0, vmax=1., c=gene_values,
+                                s=cell_plot_size, edgecolor='none')
+        if len(genes) % n_cols > 0:
+            for i in range(n_cols-len(genes) % n_cols):
+                axs[-i-1].remove()
+        plt.tight_layout();
+        cbarax = fig.add_axes([1, .7, .02, .2])
+        plt.colorbar(sc, cax=cbarax);
 
 
 class RNAseq_Sample:
