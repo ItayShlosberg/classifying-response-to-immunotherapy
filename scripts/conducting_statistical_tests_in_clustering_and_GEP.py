@@ -19,7 +19,7 @@ from utilities.package_importing import *
 """
 
 
-ROOT_FOLDER_PATH = r'/storage/md_keren/shitay/outputs/response_analysis/subcohort_1.1.22/8.1.22'
+ROOT_FOLDER_PATH = r'/storage/md_keren/shitay/outputs/response_analysis/subcohort_1.1.22/5.4.22'
 EXPERIMENT_NUM = 3
 
 ######################## WHAT YOU WANT TO PERFORM ########################
@@ -27,20 +27,31 @@ CLUSTERING_ANALYSIS = False  # ranksum-test
 GEP_ANALYSIS = False    # ranksum-test
 DIFFERENTIAL_GENE_EXP_ANALYSIS = False   # markers and heatmaps
 TSNE = False
-COMBINING_PVAL_FILES = True
+COMBINING_PVAL_FILES = False
+NATMI_ANALYSIS = True
 GROUPS = ['immune', 'CD8', 'tumor', 'myeloid'] # immune/tumor/myeloid/CD8
 
 ######################## tSNE paths ########################
 TSNE_PATH = fr'/storage/md_keren/shitay/outputs/TSNE/subcohort_1.1.22'
 
 ######################## gene expression analysis ########################
-COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/M97_M173/cohort/normalized/4.11.21/cohort_normalized_4.11.21_protein_coding_genes.pkl'
-
+# COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/M97_M173/cohort/normalized/4.11.21/cohort_normalized_4.11.21_protein_coding_genes.pkl'
+COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/M97_M173/subcohort/normalized/16.3.22/subcohort_normalized_1.1.22_protein_coding_genes.pkl'
 ######################## Clustering paths ########################
 
 IMMUNE_CLUSTER_BARCODE_MAPPING_PATH = r'/storage/md_keren/shitay/outputs/clustering/immune/summary/subcohort_1.1.22_run_1.1.22/subcohort_immune_1.1.22_clusters_mapping.csv'
 CD8_CLUSTER_BARCODE_MAPPING_PATH = r'/storage/md_keren/shitay/outputs/clustering/CD8/summary/subcohort_1.1.22_run_1.1.22/subcohort_CD8_1.1.22_clusters_mapping.csv'
 MYELOID_CLUSTER_BARCODE_MAPPING_PATH = r'/storage/md_keren/shitay/outputs/clustering/myeloid/summary/subcohort_1.1.22_run_1.1.22/subcohort_myeloid_1.1.22_clusters_mapping.csv'
+
+######################## NATMI arguments ########################
+NATMI_ROOT_PATH = r'/storage/md_keren/shitay/outputs/NATMI/tumor_CD8_myeloid/executions/21.3.22'
+NATMI_FILE_NAME = 'Edges_lrc2p.csv'
+AVG_SPECIFICITY_THRESHOLD = 0  # 0.01
+TOTAL_SPECIFICITY_THRESHOLD = 0  # 0.02
+DETECTION_THRESHOLD = 0.7
+AVG_EXPRESSION_THRESHOLD = 1
+FILTER_GEP_IN_NATNI_DF = False
+NATMI_DF_SORT_BY = 'Edge average expression derived specificity'
 
 ######################## GEP Arguments ########################
 EXEC_DIR = r'/storage/md_keren/shitay/outputs/cNMF/executions/tumor_runs/subcohort_1.1.22'
@@ -59,9 +70,9 @@ ACTIVITY_GEP_SAMPLE_PORTION_THRESHOLD = 0.1
 FILES_EXTENSION = 'csv'#
 
 # annotation paths
-immune_annotation_path = r'/storage/md_keren/shitay/Data/tables/clustering_annotations/for_pandas_df/Immune_clustering_26.6.21_annotations.csv'
-myeloid_annotation_path = r'/storage/md_keren/shitay/Data/tables/clustering_annotations/for_pandas_df/Myeloid_clustering_K_11_11.8.21_annotations.csv'
-CD8_annotation_path = r'/storage/md_keren/shitay/Data/tables/clustering_annotations/for_pandas_df/CD8_clustering_K_10_11.8.21_annotations.csv'
+immune_annotation_path = r'/storage/md_keren/shitay/Data/tables/clustering_annotations/subcohort_1.1.22/17.1.22/immune.xlsx'
+myeloid_annotation_path = r'/storage/md_keren/shitay/Data/tables/clustering_annotations/subcohort_1.1.22/17.1.22/Myeloid.xlsx'
+CD8_annotation_path = r'/storage/md_keren/shitay/Data/tables/clustering_annotations/subcohort_1.1.22/17.1.22/CD8.xlsx'
 # GEP pathways path
 GEP_pathways_path = r'/storage/md_keren/shitay/Data/tables/GEP/subcohort_1.1.22/k20_2000genes_200iter/GEPS_pathways.xlsx'
 #######################################################################
@@ -110,9 +121,9 @@ def combining_pvals_various_experiments():
     CD8_clustering_df = read_func(join(FOLDER_PATH, CD8_clustering_path))
 
     ########################################### annotation dfs ###########################################
-    immune_annotation_df = pd.read_csv(join(FOLDER_PATH, immune_annotation_path))
-    myeloid_annotation_df = pd.read_csv(join(FOLDER_PATH, myeloid_annotation_path))
-    CD8_annotation_df = pd.read_csv(join(FOLDER_PATH, CD8_annotation_path))
+    immune_annotation_df = pd.read_excel(join(FOLDER_PATH, immune_annotation_path), engine='openpyxl')
+    myeloid_annotation_df = pd.read_excel(join(FOLDER_PATH, myeloid_annotation_path), engine='openpyxl')
+    CD8_annotation_df = pd.read_excel(join(FOLDER_PATH, CD8_annotation_path), engine='openpyxl')
     # GEP_pathways_df = pd.read_excel(GEP_pathways_path)
 
     ########################################### Add annotation to pval dfs ###########################################
@@ -125,10 +136,10 @@ def combining_pvals_various_experiments():
 
     ########################################### order pval dfs ###########################################
     immune_clustering_df = immune_clustering_df[
-        ['cluster', 'cluster annotation', 'pval', 'corrected_pval']].sort_values('pval')
+        ['cluster', 'cluster annotation', 'pval', 'corrected_pval', 'Median >']].sort_values('pval')
     myeloid_clustering_df = myeloid_clustering_df[
-        ['cluster', 'cluster annotation', 'pval', 'corrected_pval']].sort_values('pval')
-    CD8_clustering_df = CD8_clustering_df[['cluster', 'cluster annotation', 'pval', 'corrected_pval']].sort_values(
+        ['cluster', 'cluster annotation', 'pval', 'corrected_pval', 'Median >']].sort_values('pval')
+    CD8_clustering_df = CD8_clustering_df[['cluster', 'cluster annotation', 'pval', 'corrected_pval', 'Median >']].sort_values(
         'pval')
     GEP_df = GEP_df.sort_values('pval')
 
@@ -245,7 +256,7 @@ def col_fixed(df, wsheet, col_skip=0):
 #     return str(x) + '\n' + ''.join(['*' for sig in [0.05, 0.005, 0.0005] if pvalue < sig])
 
 
-def get_coorected_label(x, corrected_p_value_dic, pvalue_dic):
+def get_corrected_label(x, corrected_p_value_dic, pvalue_dic):
     return str(x) + f'\n{round(pvalue_dic[x], 3)}\n{round(corrected_p_value_dic[x], 3)}\n' + ''.join(
         ['*' for sig in [0.05, 0.005, 0.0005] if corrected_p_value_dic[x] < sig])
 
@@ -310,7 +321,7 @@ def seaborn_presentation(full_sample_fractions_df, corrected_pvals, pvals, outpu
     fig = plt.figure(figsize=(6, 3), dpi=80);
     sns.reset_orig();
     full_sample_fractions_df['cluster'] = full_sample_fractions_df['Cluster'].apply(
-        lambda x: get_coorected_label(x, dict(corrected_pvals), dict(pvals)))
+        lambda x: get_corrected_label(x, dict(corrected_pvals), dict(pvals)))
     full_sample_fractions_df = full_sample_fractions_df.sort_values('Cluster')
     ax = sns.catplot(kind="box", x='cluster', y='fraction', hue=FEATURE, data=full_sample_fractions_df,
                      palette={FEATURE_B: 'r', FEATURE_A: 'b'},
@@ -348,8 +359,8 @@ def create_sample_lists(melanoma_clinical_data):
     return response_samples, non_response_samples, no_used_samples
 
 
-def load_clustering_df(IMMUNE_CLUSTER_BARCODE_MAPPING_PATH, melanoma_clinical_data):
-    clusters_barcodes_mapping_df = pd.read_csv(IMMUNE_CLUSTER_BARCODE_MAPPING_PATH)
+def load_clustering_df(clustering_barcode_path, melanoma_clinical_data):
+    clusters_barcodes_mapping_df = pd.read_csv(clustering_barcode_path)
     clusters_barcodes_mapping_df = clusters_barcodes_mapping_df[
         clusters_barcodes_mapping_df["Sample"].isin(melanoma_clinical_data['Patient id'])]
     return clusters_barcodes_mapping_df
@@ -376,33 +387,34 @@ def clustering_conduct_fraction_test_and_save_output(clustering_barcode_path, me
     seaborn_presentation(full_sample_fractions_df, corrected_pvals, pvals, output_path, group)
 
 
-def get_GEP_dfs(res_melanoma_clinical_data):
-    RUN_NAME = f'k{RUN_RANGE}_{number_of_genes}genes_{n_replicates}iter'
-    USAGES_CONSENSUS_FILE = f'{RUN_NAME}.usages.k_{selected_K}.dt_{str(local_density_threshold).replace(".", "_")}.consensus.txt'
-
-    usage_matrix = pd.read_csv(join(EXEC_DIR, RUN_NAME, USAGES_CONSENSUS_FILE), sep='\t', index_col=0)
-    usage_matrix.columns = np.arange(1, selected_K + 1)
-    normalized_usage_matrix = usage_matrix.div(usage_matrix.sum(axis=1), axis=0)
-    samples = list(set([uu.split('_')[0] for uu in list(normalized_usage_matrix.index)]))
-    df = normalized_usage_matrix.copy()
-    df['sample'] = [uu.split('_')[0] for uu in list(df.index)]
-    df['barcode'] = [uu.split('_')[1] for uu in list(df.index)]
-    # keep only data of current patients in cohort
-    GEP_all_samples_df = df.copy()
-    df = df[df['sample'].isin(res_melanoma_clinical_data.index.tolist())]
-
-    df[FEATURE] = df['sample'].apply(lambda x: res_melanoma_clinical_data.loc[x][FEATURE])
-
-
-    df_r = df[df[FEATURE] == FEATURE_A]
-    df_nr = df[df[FEATURE] == FEATURE_B]
-    ##### Assign each cell one program based on the maximal usage value.
-    r_high_prog = np.argmax(df_r[list(range(1, N_PROG + 1))].values, axis=1) + 1
-    nr_high_prog = np.argmax(df_nr[list(range(1, N_PROG + 1))].values, axis=1) + 1
-
-    df_r.loc[:, 'associated program'] = r_high_prog
-    df_nr.loc[:, 'associated program'] = nr_high_prog
-    return df, df_r, df_nr
+# def get_GEP_dfs(res_melanoma_clinical_data):
+#     RUN_NAME = f'k{RUN_RANGE}_{number_of_genes}genes_{n_replicates}iter'
+#     USAGES_CONSENSUS_FILE = f'{RUN_NAME}.usages.k_{selected_K}.dt_{str(local_density_threshold).replace(".", "_")}.consensus.txt'
+#
+#     usage_matrix = pd.read_csv(join(EXEC_DIR, RUN_NAME, USAGES_CONSENSUS_FILE), sep='\t', index_col=0)
+#     usage_matrix.columns = np.arange(1, selected_K + 1)
+#     normalized_usage_matrix = usage_matrix.div(usage_matrix.sum(axis=1), axis=0)
+#     samples = list(set([uu.split('_')[0] for uu in list(normalized_usage_matrix.index)]))
+#     df = normalized_usage_matrix.copy()
+#     df['sample'] = [uu.split('_')[0] for uu in list(df.index)]
+#     df['barcode'] = [uu.split('_')[1] for uu in list(df.index)]
+#     # keep only data of current patients in cohort
+#     GEP_all_samples_df = df.copy()
+#     res_melanoma_clinical_data = res_melanoma_clinical_data.set_index('Patient id')
+#     df = df[df['sample'].isin(res_melanoma_clinical_data.index.tolist())]
+#
+#     df[FEATURE] = df['sample'].apply(lambda x: res_melanoma_clinical_data.loc[x][FEATURE])
+#
+#
+#     df_r = df[df[FEATURE] == FEATURE_A]
+#     df_nr = df[df[FEATURE] == FEATURE_B]
+#     ##### Assign each cell one program based on the maximal usage value.
+#     r_high_prog = np.argmax(df_r[list(range(1, N_PROG + 1))].values, axis=1) + 1
+#     nr_high_prog = np.argmax(df_nr[list(range(1, N_PROG + 1))].values, axis=1) + 1
+#
+#     df_r.loc[:, 'associated program'] = r_high_prog
+#     df_nr.loc[:, 'associated program'] = nr_high_prog
+#     return df, df_r, df_nr
 
 
 def GEP_create_fraction_df(df_r, df_nr):
@@ -465,7 +477,7 @@ def GEP_seaborn_dispaly(fraction_df, corrected_pvals, pvals, output_path, activi
     # def get_pval_asterisks(x, p_value_dic):
     #     return str(x) + '\n' + ''.join(['*' for sig in [0.05, 0.005, 0.0005] if p_value_dic[x] < sig])
 
-    fraction_df['Program'] = fraction_df['program'].apply(lambda x: get_coorected_label(x, dict(corrected_pvals), dict(pvals)))
+    fraction_df['Program'] = fraction_df['program'].apply(lambda x: get_corrected_label(x, dict(corrected_pvals), dict(pvals)))
     ax = sns.catplot(kind="box", x='Program', y='fraction', hue=FEATURE, data=fraction_df,
                      palette={FEATURE_B: 'r', FEATURE_A: 'b'}, height=10, aspect=2.9).set(
         title="Programs fraction distribution")
@@ -680,6 +692,232 @@ def one_group_print_tSNE(response_samples, non_response_samples, sub_folder, gro
     print(f'Saved at {join(FOLDER_PATH, sub_folder, file_name)}')
 
 
+def extract_all_clusters(melanoma_clinical_data):
+    ###### extract clusters & GEP
+    immune_clusters_barcodes_mapping_df = load_clustering_df(IMMUNE_CLUSTER_BARCODE_MAPPING_PATH, melanoma_clinical_data)
+    CD8_clusters_barcodes_mapping_df = load_clustering_df(CD8_CLUSTER_BARCODE_MAPPING_PATH, melanoma_clinical_data)
+    myeloid_clusters_barcodes_mapping_df = load_clustering_df(MYELOID_CLUSTER_BARCODE_MAPPING_PATH, melanoma_clinical_data)
+    GEP_df, R_GEP_df, NR_GEP_df = get_GEP_dfs(melanoma_clinical_data, EXEC_DIR, RUN_RANGE, selected_K, number_of_genes, n_replicates, local_density_threshold, FEATURE, FEATURE_A, FEATURE_B)
+    GEP_df = filter_contaminated_cells_out_of_GEP_DF(GEP_df, 14, contaminated_cells_path =r'/storage/md_keren/shitay/Data/tables/GEP/subcohort_1.1.22/contaminated_cells_list/GEP14_contaminated_cells.csv')
+    R_GEP_df = filter_contaminated_cells_out_of_GEP_DF(R_GEP_df, 14, contaminated_cells_path =r'/storage/md_keren/shitay/Data/tables/GEP/subcohort_1.1.22/contaminated_cells_list/GEP14_contaminated_cells.csv')
+    NR_GEP_df = filter_contaminated_cells_out_of_GEP_DF(NR_GEP_df, 14, contaminated_cells_path =r'/storage/md_keren/shitay/Data/tables/GEP/subcohort_1.1.22/contaminated_cells_list/GEP14_contaminated_cells.csv')
+    return immune_clusters_barcodes_mapping_df, CD8_clusters_barcodes_mapping_df, myeloid_clusters_barcodes_mapping_df, GEP_df, R_GEP_df, NR_GEP_df
+
+
+def get_NATMI_FILTERED_DF():
+    # READ CSV
+    NATMI_df = pd.read_csv(join(NATMI_ROOT_PATH, NATMI_FILE_NAME))
+
+    # filter
+    df_filtered = NATMI_df[(NATMI_df['Receptor detection rate'] > DETECTION_THRESHOLD) &
+                     (NATMI_df['Ligand detection rate'] > DETECTION_THRESHOLD)]
+
+    df_filtered = df_filtered[(df_filtered['Receptor average expression value'] > AVG_EXPRESSION_THRESHOLD) &
+                              (df_filtered['Ligand average expression value'] > AVG_EXPRESSION_THRESHOLD)]
+    # df_filtered = df_filtered[(df_filtered['Receptor total expression value']>avg_expression_threshold) &
+    #                           (df_filtered['Ligand total expression value']>avg_expression_threshold)]
+
+    df_filtered = df_filtered[
+        (df_filtered['Receptor derived specificity of average expression value'] > AVG_SPECIFICITY_THRESHOLD) &
+        (df_filtered['Ligand derived specificity of average expression value'] > AVG_SPECIFICITY_THRESHOLD)]
+
+    df_filtered = df_filtered[
+        (df_filtered['Receptor derived specificity of total expression value'] > TOTAL_SPECIFICITY_THRESHOLD) &
+        (df_filtered['Ligand derived specificity of total expression value'] > TOTAL_SPECIFICITY_THRESHOLD)]
+
+    if FILTER_GEP_IN_NATNI_DF:
+        print(f'GEP siganls are filtered out')
+        df_filtered = df_filtered[df_filtered[['Sending cluster', 'Target cluster']].apply(
+            lambda x: not 'GEP' in x['Sending cluster'] and not 'GEP' in x['Target cluster'], axis=1)]
+
+    print(f'Number of pairs in filtered df is: {len(df_filtered)}')
+    ################################ show ################################
+
+    strong_signals_df = df_filtered.sort_values(NATMI_DF_SORT_BY, ascending=False).reset_index(drop=True)
+
+    ####### add parameters
+
+    strong_signals_df[f'Target cluster ({FEATURE_A}) - number of cells'] = None
+    strong_signals_df[f'Target cluster ({FEATURE_B}) - number of cells'] = None
+    strong_signals_df[f'Target cluster ({FEATURE_A}) - % cells expressing'] = None
+    strong_signals_df[f'Target cluster ({FEATURE_B}) - % cells expressing'] = None
+    strong_signals_df['Receptor - pval'] = None
+
+    strong_signals_df[f'Sending cluster ({FEATURE_A}) - number of cells'] = None
+    strong_signals_df[f'Sending cluster ({FEATURE_B}) - number of cells'] = None
+    strong_signals_df[f'Sending cluster ({FEATURE_A}) - % cells expressing'] = None
+    strong_signals_df[f'Sending cluster ({FEATURE_B}) - % cells expressing'] = None
+    strong_signals_df['Ligand - pval'] = None
+
+    return strong_signals_df
+
+
+def get_all_cohorts():
+    cohort = pickle.load(open(COHORT_PATH, 'rb'))
+    immune_cohort = cohort.filter_cells_by_property('is_immune', True)
+    tumor_cohort = cohort.filter_cells_by_property('is_cancer', True)
+    CD8_cohort = get_requested_subset(cohort, 'CYTOTOXIC_T_CELLS')
+    mye_cohort = get_requested_subset(cohort, 'MYELOIDS')
+
+    return cohort, immune_cohort, tumor_cohort, CD8_cohort, mye_cohort
+
+
+def create_cohorts_of_clusters_per_feature(cohort, clusters_barcodes_mapping_df, clusters_indexes, response_samples, non_response_samples):
+    cluster_cohorts_dic = {c_i: {} for c_i in clusters_indexes}
+    R_CD8_clusters_df = clusters_barcodes_mapping_df[clusters_barcodes_mapping_df.Sample.isin(response_samples)]
+    NR_CD8_clusters_df = clusters_barcodes_mapping_df[
+        clusters_barcodes_mapping_df.Sample.isin(non_response_samples)]
+
+    for cluster_curr_index in clusters_indexes:
+        R_cells_ids = R_CD8_clusters_df[R_CD8_clusters_df.Cluster == cluster_curr_index][['Sample', 'Barcode']]
+        NR_cells_ids = NR_CD8_clusters_df[NR_CD8_clusters_df.Cluster == cluster_curr_index][['Sample', 'Barcode']]
+
+        R_cohort = cohort.get_subset_by_identifiers(R_cells_ids['Sample'], R_cells_ids['Barcode'])
+        NR_cohort = cohort.get_subset_by_identifiers(NR_cells_ids['Sample'], NR_cells_ids['Barcode'])
+
+        cluster_cohorts_dic[cluster_curr_index][FEATURE_A] = R_cohort
+        cluster_cohorts_dic[cluster_curr_index][FEATURE_B] = NR_cohort
+
+    return cluster_cohorts_dic
+
+
+def create_cohorts_of_GEPs_per_feature(tumor_cohort, GEP_df, R_GEP_df, NR_GEP_df):
+    GEP_indexes = list(GEP_df.columns[4:])
+    GEPS_dic = {g_i: {} for g_i in GEP_indexes}
+    for GEP_curr_index in GEP_indexes:
+        R_cells_ids = R_GEP_df[R_GEP_df['associated program'] == GEP_curr_index][['sample', 'barcode']]
+        NR_cells_ids = NR_GEP_df[NR_GEP_df['associated program'] == GEP_curr_index][['sample', 'barcode']]
+
+        NR_cohort = tumor_cohort.get_subset_by_identifiers(NR_cells_ids['sample'], NR_cells_ids['barcode'])
+        R_cohort = tumor_cohort.get_subset_by_identifiers(R_cells_ids['sample'], R_cells_ids['barcode'])
+
+        GEPS_dic[GEP_curr_index][FEATURE_A] = R_cohort
+        GEPS_dic[GEP_curr_index][FEATURE_B] = NR_cohort
+    return GEPS_dic
+
+
+def conduct_statistical_test_between_expression(R_expression, NR_expression, gene_expression_threshold):
+    R_n_cells = len(R_expression)
+    NR_n_cells = len(NR_expression)
+    R_n_cells_expressing = sum(R_expression > gene_expression_threshold)
+    NR_n_cells_expressing = sum(NR_expression > gene_expression_threshold)
+    R_per_expressing = R_n_cells_expressing / R_n_cells if R_n_cells != 0 else 0
+    NR_per_expressing = NR_n_cells_expressing / NR_n_cells if NR_n_cells != 0 else 0
+
+    oddsratio, pvalue = stats.fisher_exact([[R_n_cells_expressing,
+                                             NR_n_cells_expressing],
+                                            [R_n_cells - R_n_cells_expressing,
+                                             NR_n_cells - NR_n_cells_expressing]])
+
+    return R_n_cells, NR_n_cells, R_per_expressing, NR_per_expressing, pvalue
+
+
+def conduct_statistical_tests_on_NATMI_signals(cohort, cohorts_dic, strong_signals_df,
+                                               gene_expression_threshold=1):
+    """
+    conduct statistical tests ligands and receptor genes in strong_signals_df and look for differential cases
+    between mucosal & cutaneous (or R vs. NR).
+    :param cohort:
+    :param cohorts_dic: cohorts of all clusters and GEP in a dictionary structure.
+    :param strong_signals_df: NATMI df filtered out from weak signals.
+    :param gene_expression_threshold: min expression value for a cell to express a gene
+    :return:
+    """
+    print(f'conduct statistical tests on NATMI signals')
+    for row_index, current_signal in strong_signals_df.iterrows():
+
+        if not current_signal['Ligand symbol'] in cohort.gene_names or not current_signal[
+                                                                               'Receptor symbol'] in cohort.gene_names:
+            continue
+        ligand_gene_index = cohort.gene_names.index(current_signal['Ligand symbol'])
+        receptor_gene_index = cohort.gene_names.index(current_signal['Receptor symbol'])
+
+        cluster_name = current_signal['Sending cluster'].split('_')[0]
+        if cluster_name == 'GEP':
+            cluster_idx = int(current_signal['Sending cluster'].split('_')[1][1:])
+        else:
+            cluster_idx = int(current_signal['Sending cluster'].split('_')[2])
+
+        R_counts = cohorts_dic[cluster_name][cluster_idx][FEATURE_A].counts
+        NR_counts = cohorts_dic[cluster_name][cluster_idx][FEATURE_B].counts
+
+        R_n_cells, NR_n_cells, R_per_expressing, NR_per_expressing, pval = conduct_statistical_test_between_expression(
+            R_counts[:, ligand_gene_index], NR_counts[:, ligand_gene_index], gene_expression_threshold)
+
+        strong_signals_df.at[row_index, [f'Sending cluster ({FEATURE_A}) - number of cells']] = R_n_cells
+        strong_signals_df.at[row_index, [f'Sending cluster ({FEATURE_B}) - number of cells']] = NR_n_cells
+        strong_signals_df.at[
+            row_index, [f'Sending cluster ({FEATURE_A}) - % cells expressing']] = R_per_expressing
+        strong_signals_df.at[
+            row_index, [f'Sending cluster ({FEATURE_B}) - % cells expressing']] = NR_per_expressing
+        strong_signals_df.at[row_index, ['Ligand - pval']] = pval
+
+        cluster_name = current_signal['Target cluster'].split('_')[0]
+        if cluster_name == 'GEP':
+            cluster_idx = int(current_signal['Target cluster'].split('_')[1][1:])
+        else:
+            cluster_idx = int(current_signal['Target cluster'].split('_')[2])
+
+        R_counts = cohorts_dic[cluster_name][cluster_idx][FEATURE_A].counts
+        NR_counts = cohorts_dic[cluster_name][cluster_idx][FEATURE_B].counts
+
+        R_n_cells, NR_n_cells, R_per_expressing, NR_per_expressing, pval = conduct_statistical_test_between_expression(
+            R_counts[:, receptor_gene_index], NR_counts[:, receptor_gene_index], gene_expression_threshold)
+        strong_signals_df.at[row_index, [f'Target cluster ({FEATURE_A}) - number of cells']] = R_n_cells
+        strong_signals_df.at[row_index, [f'Target cluster ({FEATURE_B}) - number of cells']] = NR_n_cells
+        strong_signals_df.at[
+            row_index, [f'Target cluster ({FEATURE_A}) - % cells expressing']] = R_per_expressing
+        strong_signals_df.at[
+            row_index, [f'Target cluster ({FEATURE_B}) - % cells expressing']] = NR_per_expressing
+        strong_signals_df.at[row_index, ['Receptor - pval']] = pval
+
+    # remove null lines:
+    strong_signals_df = strong_signals_df[~((strong_signals_df['Receptor - pval'].isnull()) | (
+        strong_signals_df['Ligand - pval'].isnull()))]
+
+    # correct pvals
+    strong_signals_df['Receptor - qval'] = multipletests_fdr(strong_signals_df['Receptor - pval'])[1]
+    strong_signals_df['Ligand - qval'] = multipletests_fdr(strong_signals_df['Ligand - pval'])[1]
+    # take rows with qval < 0.05
+    strong_signals_df = strong_signals_df[
+        (strong_signals_df['Receptor - qval'] < 0.05) | (strong_signals_df['Ligand - qval'] < 0.05)]
+    strong_signals_df = strong_signals_df.iloc[:,
+                               [0, 3, 1, 2] + list(range(25, 29)) + list(range(20, 24)) + [31, 30] +
+                               list(range(4, 19)) + [29, 24]]
+    return strong_signals_df
+
+def infer_NATMI_cellular_communication(response_samples, non_response_samples, melanoma_clinical_data):
+    """
+    run NATMI analysis - create a DF of ligand-receptor pairs in myeloid,CD8 clusters and tumor GEPS.
+    then, conduct statistical tests to examine which pairs are significant different between mucosal & cutaneous samples.
+    return a df of significant cases sorted by specificity of edges.
+    :param response_samples:
+    :param non_response_samples:
+    :param melanoma_clinical_data:
+    :return:
+    """
+    print(f'infer NATMI cellular communication networks')
+    immune_clusters_barcodes_mapping_df, CD8_clusters_barcodes_mapping_df, myeloid_clusters_barcodes_mapping_df, GEP_df, R_GEP_df, NR_GEP_df = extract_all_clusters(melanoma_clinical_data)
+    strong_signals_df = get_NATMI_FILTERED_DF()
+    cohort, immune_cohort, tumor_cohort, CD8_cohort, mye_cohort = get_all_cohorts()
+
+    # Create cohorts of clusters per feature
+    CD8_dic = create_cohorts_of_clusters_per_feature(CD8_cohort, CD8_clusters_barcodes_mapping_df,
+                                                    list(set(CD8_clusters_barcodes_mapping_df.Cluster)),
+                                                    response_samples, non_response_samples)
+    mye_dic = create_cohorts_of_clusters_per_feature(mye_cohort, myeloid_clusters_barcodes_mapping_df,
+                                                    list(set(myeloid_clusters_barcodes_mapping_df.Cluster)),
+                                                    response_samples, non_response_samples)
+    GEPs_dic = create_cohorts_of_GEPs_per_feature(tumor_cohort, GEP_df, R_GEP_df, NR_GEP_df)
+
+    cohorts_dic = {'GEP':GEPs_dic, 'Myeloid':mye_dic, 'CD8':CD8_dic}
+
+    # get siginificant cases
+    sig_cases_strong_signals_df = conduct_statistical_tests_on_NATMI_signals(cohort, cohorts_dic, strong_signals_df,
+                                               gene_expression_threshold=1)
+    sig_cases_strong_signals_df.to_excel(join(FOLDER_PATH, r'NATMI_strong_signal_sig_cases.xlsx'))
+
+
 if __name__ == '__main__':
 
     create_folder(FOLDER_PATH)
@@ -710,3 +948,6 @@ if __name__ == '__main__':
     # Combine pvals files
     if COMBINING_PVAL_FILES:
         combining_pvals_various_experiments()
+
+    if NATMI_ANALYSIS:
+        infer_NATMI_cellular_communication(response_samples, non_response_samples, melanoma_clinical_data)
