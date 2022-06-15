@@ -63,7 +63,7 @@ def get_cluster_fraction_df(clusters_barcodes_mapping_df):
     n_cells_in_cluster_df['sample_fraction'] = n_cells_in_cluster_df['n_cells_in_cluster'] / n_cells_in_cluster_df['n_cells_in_sample']
     cluster_fraction_df = n_cells_in_cluster_df[['sample', 'cluster', 'sample_fraction']]
 
-    #### Add sample & cluster pairs which do not appear in fraction_df
+    #### Add sample & cluster pairs which do not appear in fraction_df (fraction zero)
     sample_cluster_pairs = [[sam, cl] for sam in clusters_barcodes_mapping_df['Sample'].unique().tolist() for cl in clusters_barcodes_mapping_df['Cluster'].unique().tolist()]
     zero_fraction_pairs_df = pd.DataFrame([[pair[0],pair[1],0]   for pair in sample_cluster_pairs if not pair in cluster_fraction_df[['sample', 'cluster']].values.tolist()], columns=['sample', 'cluster', 'sample_fraction'])
     cluster_fraction_df = cluster_fraction_df.append(zero_fraction_pairs_df).sort_values(['sample', 'cluster']).reset_index().drop(columns=('index'))

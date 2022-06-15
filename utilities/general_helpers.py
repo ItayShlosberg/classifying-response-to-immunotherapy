@@ -8,6 +8,10 @@ import matplotlib.pyplot as plt
 # from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import sys
 from shutil import copyfile
+from matplotlib.colors import LinearSegmentedColormap
+from shap.plots.colors import red_white_blue
+from scipy.cluster.hierarchy import dendrogram, linkage
+from scipy.cluster import hierarchy
 
 
 def flatten_list(l):
@@ -235,6 +239,45 @@ def bold(string):
     return '\033[1m' + string + '\033[0m'
 
 
+def plot_stackedbar_p(df, labels, title, subtitle, file_path=None, colors=[]):
+    if not len(colors):
+        # colors = ['darkred', 'yellow', 'tomato', 'orange', 'bisque', 'aqua', 'powderblue', 'violet', 'purple',
+        #   '#1D2F6F', '#8390FA', '#6EAF46', '#FAC748', '#1D2F6F', '#8390FA', '#6EAF46', '#FAC748']
+        colormap = plt.cm.gist_ncar  # nipy_spectral, Set1,Paired           [1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12]
+        colors = np.array([colormap(i) for i in np.linspace(0, 0.9, 100)])[
+            [84, 99, 15, 70, 60, 53, 92, 23, 30, 1, 40, 80, 40, 12, 13, 14]]
+    fields = df.columns.tolist()
+
+    # figure and axis
+    fig, ax = plt.subplots(1, figsize=(12, 10))
+    # plot bars
+    left = len(df) * [0]
+    for idx, name in enumerate(fields):
+        plt.barh(df.index, df[name], left=left, color=colors[idx])
+        left = left + df[name]
+        # title and subtitle
+        plt.title(title, loc='left')
+        plt.text(0, ax.get_yticks()[-1] + 0.75, subtitle)
+        # legend
+        # plt.legend(labels, bbox_to_anchor=([0.58, 1, 0, 0]), ncol=4, frameon=False)
+        plt.legend(labels, bbox_to_anchor=([-0.1, 1, 0, 0]), ncol=1, frameon=False)
+
+        # remove spines
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        ax.spines['top'].set_visible(False)
+        ax.spines['bottom'].set_visible(False)
+        # format x ticks
+        xticks = np.arange(0, 1.1, 0.1)
+        xlabels = ['{}%'.format(i) for i in np.arange(0, 101, 10)]
+        plt.xticks(xticks, xlabels)
+        # adjust limits and draw grid lines
+        plt.ylim(-0.5, ax.get_yticks()[-1] + 0.5)
+        ax.xaxis.grid(color='gray', linestyle='dashed')
+    plt.show()
+    if file_path:
+        fig.savefig(file_path)
+
 def annotate_seaborn_barplot(axs):
     for p in axs.patches:
         axs.annotate(str(np.round(p.get_height(),3)), (p.get_x() * 1.005, p.get_height() * 1.005))
@@ -258,3 +301,130 @@ def show_values_on_bars(axs):
             _show_on_single_plot(ax)
     else:
         _show_on_single_plot(axs)
+
+
+def get_hierarchical_cells_order(values):
+    linked = linkage(values, 'single')
+    order = hierarchy.leaves_list(hierarchy.optimal_leaf_ordering(linked, values))
+    return order
+
+
+def shapely_heatmap(shap_values, feature_names, instance_order, cell_values,
+                    max_display=10, cmap=red_white_blue, show=True):
+    """ Create a heatmap plot of a set of SHAP values.
+
+    This plot is designed to show the population substructure of a dataset using supervised
+    clustering and a heatmap. Supervised clustering involves clustering data points not by their original
+    feature values but by their explanations. By default we cluster using shap.utils.hclust_ordering
+    but any clustering can be used to order the samples.
+
+    Parameters
+    ----------
+    shap_values : shap.Explanation
+        A multi-row Explanation object that we want to visualize in a cluster ordering.
+
+    instance_order : OpChain or numpy.ndarray
+        A function that returns a sort ordering given a matrix of SHAP values and an axis, or
+        a direct sample ordering given as an numpy.ndarray.
+
+    feature_values : OpChain or numpy.ndarray
+        A function that returns a global summary value for each input feature, or an array of such values.
+
+    feature_order : None, OpChain, or numpy.ndarray
+        A function that returns a sort ordering given a matrix of SHAP values and an axis, or
+        a direct input feature ordering given as an numpy.ndarray. If None then we use
+        feature_values.argsort
+
+    max_display : int
+        The maximum number of features to display.
+
+    show : bool
+        If show is set to False then we don't call the matplotlib.pyplot.show() function. This allows
+        further customization of the plot by the caller after the bar() function is finished.
+
+    """
+    feature_values = np.abs(cell_values).mean(0)
+    feature_order = np.argsort(np.abs(shap_values).sum(axis=0))[::-1]
+    xlabel = "Instances"
+    values = shap_values[:, feature_order]
+    feature_values = feature_values[feature_order]
+    feature_names = feature_names[feature_order]
+
+
+    if not instance_order is None:
+        values = values[instance_order]
+
+    # collapse
+    if values.shape[1] > max_display:
+        new_values = np.zeros((values.shape[0], max_display))
+        new_values[:, :max_display - 1] = values[:, :max_display - 1]
+        new_values[:, max_display - 1] = values[:, max_display - 1:].sum(1)
+        new_feature_values = np.zeros(max_display)
+        new_feature_values[:max_display - 1] = feature_values[:max_display - 1]
+        new_feature_values[max_display - 1] = feature_values[max_display - 1:].sum()
+        feature_names = list(feature_names[:max_display])
+        feature_names[-1] = "Sum of %d other features" % (values.shape[1] - max_display + 1)
+        values = new_values
+        feature_values = new_feature_values
+
+    # define the plot size
+    row_height = 0.5
+    plt.gcf().set_size_inches(8, values.shape[1] * row_height + 2.5)
+
+    # plot the matrix of SHAP values as a heat map
+    vmin = np.nanpercentile(values.flatten(), 1)
+    vmax = np.nanpercentile(values.flatten(), 99)
+    plt.imshow(
+        values.T, aspect=0.7 * values.shape[0] / values.shape[1], interpolation="nearest", vmin=min(vmin, -vmax),
+        vmax=max(-vmin, vmax),
+        cmap=cmap
+    )
+    yticks_pos = np.arange(values.shape[1])
+    yticks_labels = feature_names
+
+    plt.yticks([-1.5] + list(yticks_pos), ["f(x)"] + list(yticks_labels), fontsize=13)
+
+    plt.ylim(values.shape[1] - 0.5, -3)
+
+    plt.gca().xaxis.set_ticks_position('bottom')
+    plt.gca().yaxis.set_ticks_position('left')
+    plt.gca().spines['right'].set_visible(True)
+    plt.gca().spines['top'].set_visible(False)
+    plt.gca().spines['bottom'].set_visible(False)
+    plt.axhline(-1.5, color="#aaaaaa", linestyle="--", linewidth=0.5)
+    fx = values.T.mean(0)
+    plt.plot(-fx / np.abs(fx).max() - 1.5, color="#000000", linewidth=1)
+    # pl.colorbar()
+    plt.gca().spines['left'].set_bounds(values.shape[1] - 0.5, -0.5)
+    plt.gca().spines['right'].set_bounds(values.shape[1] - 0.5, -0.5)
+    b = plt.barh(
+        yticks_pos, (feature_values / np.abs(feature_values).max()) * values.shape[0] / 20,
+        0.7, align='center', color="#000000", left=values.shape[0] * 1.0 - 0.5
+        # color=[colors.red_rgb if shap_values[feature_inds[i]] > 0 else colors.blue_rgb for i in range(len(y_pos))]
+    )
+    for v in b:
+        v.set_clip_on(False)
+    plt.xlim(-0.5, values.shape[0] - 0.5)
+    plt.xlabel(xlabel)
+
+    if True:
+        import matplotlib.cm as cm
+        m = cm.ScalarMappable(cmap=cmap)
+        m.set_array([min(vmin, -vmax), max(-vmin, vmax)])
+        cb = plt.colorbar(m, ticks=[min(vmin, -vmax), max(-vmin, vmax)], aspect=1000, fraction=0.0090, pad=0.10,
+                          panchor=(0, 0.05))
+        # cb.set_ticklabels([min(vmin,-vmax), max(-vmin,vmax)])
+        cb.set_label("SHAP value", size=12, labelpad=-10)
+        cb.ax.tick_params(labelsize=11, length=0)
+        cb.set_alpha(1)
+        cb.outline.set_visible(False)
+        bbox = cb.ax.get_window_extent().transformed(plt.gcf().dpi_scale_trans.inverted())
+        cb.ax.set_aspect((bbox.height - 0.9) * 15)
+        cb.ax.set_anchor((1, 0.2))
+        # cb.draw_all()
+
+    for i in [0]:
+        plt.gca().get_yticklines()[i].set_visible(False)
+
+    if show:
+        plt.show()

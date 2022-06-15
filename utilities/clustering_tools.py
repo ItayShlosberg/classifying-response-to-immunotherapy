@@ -122,7 +122,7 @@ def kmeans(Data_RNAseq, numer_of_clusters):
 #
 
 def find_marker_genes_in_cluster(cluster_data, other_clusters_data, log_FC_threshold, pval_threshold,
-                                 min_pct, min_diff_pct):
+                                 min_pct, min_diff_pct, min_mean_exp):
     """
     After the clustering process has been done run this function to find marker genes for each cluster.
     The function conducts a Fisher Exact Test for every gene to check whether that gene constitutes a marker
@@ -158,8 +158,8 @@ def find_marker_genes_in_cluster(cluster_data, other_clusters_data, log_FC_thres
     df['features'] = cluster_data.features
     df['gene names'] = cluster_data.gene_names
     df['(1)mean_expression'] = np.mean(cluster_data.counts, axis=0)
-    df['(2)mean expression'] = np.mean(other_clusters_data.counts, axis=0)
-    df['log_FC'] = np.log2((df['(1)mean_expression'] + 0.01) / (df['(2)mean expression'] + 0.01))
+    df['(2)mean_expression'] = np.mean(other_clusters_data.counts, axis=0)
+    df['log_FC'] = np.log2((df['(1)mean_expression'] + 0.01) / (df['(2)mean_expression'] + 0.01))
     df['(1)#expressing'] = np.sum((cluster_data.counts > min_expression_threshold), axis=0)
     df['(2)#expressing'] = np.sum((other_clusters_data.counts > min_expression_threshold), axis=0)
     df['(1)%expressing'] = df['(1)#expressing'] / n_cells_in_cluster
@@ -167,6 +167,8 @@ def find_marker_genes_in_cluster(cluster_data, other_clusters_data, log_FC_thres
     df['%expressing_diff'] = df['(1)%expressing'] - df['(2)%expressing']
 
     # filters not satisfying genes.
+    df = df[((df["(1)mean_expression"] * n_cells_in_cluster + df["(2)mean_expression"] * n_cells_in_other_clusters) /
+             (n_cells_in_cluster + n_cells_in_other_clusters)) > min_mean_exp]
     df = df[(df["(1)%expressing"] > min_pct)]
     df = df[(df["%expressing_diff"] > min_diff_pct)]
     df = df[(df['log_FC'] > log_FC_threshold)]
@@ -189,28 +191,38 @@ def find_marker_genes_in_cluster(cluster_data, other_clusters_data, log_FC_thres
     df['pvals'] = pvals_corrected.tolist()
     df = df[df['pvals'] < pval_threshold]
 
-    return df
+    return df.reset_index(drop=True)
 
 
 def find_satisfying_list_of_markers_in_cluster(cluster_data, other_clusters_data, log_FC_threshold, pval_threshold,
-                                 min_pct, min_diff_pct, min_markers=30):
+                                 min_pct, min_diff_pct, min_mean_exp, min_markers=30):
     cluster_markers = find_marker_genes_in_cluster(cluster_data, other_clusters_data, log_FC_threshold, pval_threshold,
-                                                   min_pct, min_diff_pct)
+                                                   min_pct, min_diff_pct, min_mean_exp)
 
 
     n_loops = 0
-    while len(cluster_markers) < min_markers and n_loops < 3:
+    while len(cluster_markers) < min_markers and n_loops < 2:
         min_diff_pct = min_diff_pct / 2
         min_pct = min_pct / 2
+        min_mean_exp = min_mean_exp / 2
         n_loops += 1
-        cluster_markers = find_marker_genes_in_cluster(cluster_data, other_clusters_data, log_FC_threshold,
+        print(f"Have not found more than {min_markers} markers, lower demands:")
+        print(f"Round {n_loops}")
+        print(f"min_diff_pct: {min_diff_pct}")
+        print(f"min_pct: {min_pct}")
+        print(f"min_mean_exp: {min_mean_exp}")
+        cluster_markers = find_marker_genes_in_cluster(cluster_data,
+                                                       other_clusters_data,
+                                                       log_FC_threshold,
                                                        pval_threshold,
-                                                       min_pct, min_diff_pct)
+                                                       min_pct,
+                                                       min_diff_pct,
+                                                       min_mean_exp)
     return cluster_markers
 
 
 def find_markers_in_clusters(data_rna_seq, clusters_indices, log_ratio_threshold = 0.5, pval_threshold=0.05,
-                             min_pct=0.1, min_diff_pct=0.1):
+                             min_pct=0.1, min_diff_pct=0.1, min_mean_exp=1):
     """
 
     :param data_rna_seq:
@@ -222,7 +234,13 @@ def find_markers_in_clusters(data_rna_seq, clusters_indices, log_ratio_threshold
         print(f'Progress: {cluster_idx+1}/{len(clusters_indices)}')
         current_cluster_indices = clusters_indices[cluster_idx]
         other_clusters_indices = [ii for ii in flatten_list(clusters_indices) if not ii in clusters_indices[cluster_idx]]
-        cluster_markers = find_marker_genes_in_cluster(data_rna_seq[current_cluster_indices], data_rna_seq[other_clusters_indices], log_ratio_threshold, pval_threshold, min_pct, min_diff_pct)
+        cluster_markers = find_marker_genes_in_cluster(data_rna_seq[current_cluster_indices],
+                                                       data_rna_seq[other_clusters_indices],
+                                                       log_ratio_threshold,
+                                                       pval_threshold,
+                                                       min_pct,
+                                                       min_diff_pct,
+                                                       min_mean_exp)
         cluster_markers_list.append({'cluster id': cluster_idx, 'markers': cluster_markers})
     return cluster_markers_list
 
@@ -247,7 +265,7 @@ def get_clusters_indices(df, cohort):
 
 
 def find_satisfying_list_of_markers_in_clusters(data_rna_seq, clusters_indices, min_markers=30, log_ratio_threshold = 0.5, pval_threshold=0.05,
-                             min_pct=0.1, min_diff_pct=0.1):
+                             min_pct=0.1, min_diff_pct=0.1, min_mean_exp=1):
     """
 
     :param data_rna_seq:
@@ -269,13 +287,26 @@ def find_satisfying_list_of_markers_in_clusters(data_rna_seq, clusters_indices, 
                                                                           '%expressing_diff'])})
             continue
         other_clusters_indices = [ii for ii in flatten_list(clusters_indices) if not ii in clusters_indices[cluster_idx]]
-        cluster_markers = find_marker_genes_in_cluster(data_rna_seq[current_cluster_indices], data_rna_seq[other_clusters_indices], log_ratio_threshold, pval_threshold, min_pct, min_diff_pct)
+        cluster_markers = find_marker_genes_in_cluster(data_rna_seq[current_cluster_indices],
+                                                       data_rna_seq[other_clusters_indices],
+                                                       log_ratio_threshold,
+                                                       pval_threshold,
+                                                       min_pct,
+                                                       min_diff_pct,
+                                                       min_mean_exp)
         n_loops = 0
         while len(cluster_markers) < min_markers and n_loops < 3:
             min_diff_pct = min_diff_pct/2
             min_pct = min_pct/2
+            min_mean_exp = min_mean_exp/2
             n_loops += 1
-            cluster_markers = find_marker_genes_in_cluster(data_rna_seq[current_cluster_indices], data_rna_seq[other_clusters_indices], log_ratio_threshold, pval_threshold, min_pct, min_diff_pct)
+            cluster_markers = find_marker_genes_in_cluster(data_rna_seq[current_cluster_indices],
+                                                           data_rna_seq[other_clusters_indices],
+                                                           log_ratio_threshold,
+                                                           pval_threshold,
+                                                           min_pct,
+                                                           min_diff_pct,
+                                                           min_mean_exp)
         cluster_markers_list.append({'cluster id': cluster_idx, 'markers': cluster_markers})
     return cluster_markers_list
 
