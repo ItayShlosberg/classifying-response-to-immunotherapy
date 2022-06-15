@@ -2,11 +2,14 @@ import pickle
 import pandas as pd
 import os
 
-from Models.feature_explorer import Feature_Explorer
-from scripts.experiments_enviroment import build_datasets
+from MachineLearning.Models.feature_explorer import Feature_Explorer
+from MachineLearning.scripts.experiments_enviroment import build_datasets
 from utilities.general_helpers import load_yml
 
-CONFIG_PATH = r'../cfg/feature_importance_cfg.yaml'
+# CONFIG_PATH = r'../cfg/feature_importance_cfg.yaml'
+
+CONFIG_PATH = r'C:\Users\KerenYlab\Desktop\Technion studies\courses\Cancer Bioinformatics - 066529\Final project\submission_CB\Results\All Experiments outputs\exp_44\config.yaml'
+
 
 EXPERIMENT_NAME, EXPERIMENTS_FOLDER, config = load_yml(CONFIG_PATH)
 

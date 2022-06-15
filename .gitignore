@@ -10,3 +10,15 @@ __pycache__/
 cfg/factory_cfg/
 
 Experiments/
+
+*.png
+
+*.jpg
+
+*.p
+
+*.pkl
+
+*.yaml
+
+XGBoost_facilities/original_files/activated_t_cells/gene_scores/

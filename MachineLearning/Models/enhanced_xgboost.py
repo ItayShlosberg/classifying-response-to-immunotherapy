@@ -6,6 +6,54 @@ import pickle
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_auc_score
 
 
+
+
+
+##### 6.4.22
+class NGModel:
+    def __init__(self, feature_names, num_round, early_stopping_rounds, max_depth):
+
+        self.params = {'max_depth': max_depth,
+                       'eta': 1,
+                       'objective': 'binary:logistic',
+                       'nthread': 4,
+                       'eval_metric': 'auc'}
+        self.num_round = num_round
+        self.early_stopping_rounds = early_stopping_rounds
+        # self.k_folds = k_folds
+        # self.model_layers = []
+        # self.patient_prediction_threshold = None
+        # self.cells_presictions_threshold = None
+        # self.model = xgb.XGBClassifier(n_estimators=num_round, learning_rate=0.16, max_depth=15, use_label_encoder=False)
+        self.num_round = num_round
+        self.early_stopping_rounds = early_stopping_rounds
+        self.feature_names = feature_names
+
+
+    def train(self, x_train, y_train, x_val, y_val, verbose=True):
+        # self.model.fit(X_train, y_train)
+
+        dtrain = xgb.DMatrix(x_train, label=y_train, feature_names=self.feature_names)
+        dval = xgb.DMatrix(x_val, label=y_val, feature_names=self.feature_names)
+        self.model = xgb.train(self.params, dtrain, self.num_round,
+                        evals=[(dtrain, 'train'), (dval, 'validation')],
+                        early_stopping_rounds=self.early_stopping_rounds,
+                        verbose_eval=verbose)
+
+        y_pred = self.model.predict(dval)
+        self.threshold = pick_best_threshold(y_val, y_pred)
+
+    def inference(self, X):
+        dcells = xgb.DMatrix(X, feature_names=self.feature_names)
+        y_pred = self.model.predict(dcells)
+        y_pred = (y_pred >= self.threshold).astype(int)
+        return y_pred
+
+
+
+
+
+
 def pick_best_threshold(labels, predictions_probs):
     """
     Uses ROC (FTR, TPR) values, in which we decide what is the best threshold. when 1-TPR = 1-FPR for simplicity.

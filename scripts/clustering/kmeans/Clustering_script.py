@@ -32,12 +32,12 @@ from sklearn.manifold import TSNE
 from scipy.stats import pearsonr
 
 
-# INPUT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/cohort/normalized/6.21/immune_cells_26.6.21_4k_genes.pkl'
-# OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/myeloid/kmeans/cohort_26.6.21_run_11.8.21'
-INPUT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/M97_M173/subcohort/normalized/1.1.22/subcohort_immune_cells_normalized_1.1.22_4k_genes.pkl'
-OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/myeloid/kmeans/subcohort_1.1.22_run_1.1.22'
+INPUT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/M97_M173/cohort/normalized/16.3.22/immune_cells_normalized_16.3.22_4k_genes.pkl'
+OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/CD8/kmeans/cohort_16.3.22_run_29.4.22'
+# INPUT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/M97_M173/subcohort/normalized/1.1.22/subcohort_immune_cells_normalized_1.1.22_4k_genes.pkl'
+# OUTPUT_PATH = r'/storage/md_keren/shitay/outputs/clustering/myeloid/kmeans/subcohort_1.1.22_run_1.1.22'
 FILE_NAME = r'kmeans_immune_cells_4k_genes'
-SUBSET = 'MYELOIDS'    # None - all cells, MYELOIDS/CYTOTOXIC_T_CELLS
+SUBSET = 'CYTOTOXIC_T_CELLS'    # None - all cells, MYELOIDS/CYTOTOXIC_T_CELLS
 MAX_ITERATION = 10  # Number of iteration to get non_empty clusters.
 NON_EMPTY_CLUSTER_DEF = 20  # defines how many cells is a non_empty cluster
 

@@ -27,15 +27,15 @@ from utilities.droplet_dataset import get_requested_subset
 
 
 # OUTPUT_DIR = r'/storage/md_keren/shitay/outputs/TSNE/cohort_26.6.21/cytotoxic_t_cells'
-OUTPUT_DIR = r'/storage/md_keren/shitay/outputs/TSNE/subcohort_1.1.22/tumor'
+OUTPUT_DIR = r'/storage/md_keren/shitay/outputs/TSNE/cohort_5.5.22/immune/perplexity'
 
 # in use only in 'run_bh_tsne' function
-FILE_NAME = r'tumor_bhtsne_1.1.22.pkl'
-CSV_SUFFIX = r'tumor_bhtsne_1.1.22.csv'
+FILE_NAME = r'immune_bhtsne_5.5.22.pkl'
+CSV_SUFFIX = r'immune_bhtsne_5.5.22.csv'
 PERPLEXITY = 30.0    # default=30.0
 
 # cohort should be normalized and variance filtered (4k genes)
-COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/M97_M173/subcohort/normalized/1.1.22/subcohort_tumor_cells_normalized_1.1.22_4k_genes.pkl'
+COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/M97_M173/cohort/normalized/5.5.22/immune_cells_normalized_5.5.22_4k_genes.pkl'
 
 SUBSET = None # 'None' # None - all cells, MYELOIDS/CYTOTOXIC_T_CELLS
 
@@ -65,7 +65,7 @@ def run_bh_tsne():
     df = pd.DataFrame(cells_embedded, columns=['x', 'y'])
     df['Barcode'] = cohort.barcodes
     df['Sample'] = cohort.samples
-    df.to_csv(join(OUTPUT_DIR, CSV_SUFFIX))
+    df.to_csv(join(OUTPUT_DIR, CSV_SUFFIX), index=False)
 
 
 def run_bh_tsne_all_perplexity():
@@ -85,6 +85,7 @@ def run_bh_tsne_all_perplexity():
 
     print(f"PCs shape {PCs.shape}")
 
+    create_folder(OUTPUT_DIR)
     for perplexity in PERPLEXITY:
         print(f"Running TSNE Using perplexity {perplexity}")
         cells_embedded = tsne(PCs, perplexity=perplexity)
@@ -94,9 +95,9 @@ def run_bh_tsne_all_perplexity():
         df = pd.DataFrame(cells_embedded, columns=['x', 'y'])
         df['Barcode'] = cohort.barcodes
         df['Sample'] = cohort.samples
-        df.to_csv(join(OUTPUT_DIR, f'perplexity_{perplexity}.csv'))
+        df.to_csv(join(OUTPUT_DIR, f'perplexity_{perplexity}.csv'), index=False)
 
 
 if __name__ == '__main__':
-    run_bh_tsne()
-    # run_bh_tsne_all_perplexity()
+    # run_bh_tsne()
+    run_bh_tsne_all_perplexity()

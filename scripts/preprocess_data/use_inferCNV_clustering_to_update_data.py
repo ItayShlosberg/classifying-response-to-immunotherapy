@@ -66,7 +66,8 @@ from utilities.general_helpers import intersection_of_lists
 
 # In that path all pkl of the updated properties will be saved.
 # OUTPUT_PATH = fr'D:\Technion studies\Keren Laboratory\python_playground\outputs\inferCNV\update_runs\21.2.21'
-OUTPUT_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\inferCNV\update_runs\4.11.21'
+# OUTPUT_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\inferCNV\update_runs\4.11.21'
+OUTPUT_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\temporal garbage\11.5.22'
 
 # path for samples which will be used to update. Important: taking the last-updated scrublet output. (after all other QC processes).
 ROW_SAMPLES_PATH = fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\Data\droplet_seq\ROW_DATA'
@@ -151,6 +152,7 @@ def remove_empty_cells(rna_sample):
     # First, find empty cells
     sample_num_exp_genes_in_cell = np.sum(rna_sample.counts > 0, axis=1)
     sample_empty_cells_bool = sample_num_exp_genes_in_cell < NON_EMPTY_CELL_MIN_GENES
+    number_of_empty_cells = sum(sample_empty_cells_bool)
     sample_empy_cells = rna_sample[sample_empty_cells_bool]
 
     # Find cells that are not neutrophils
@@ -163,7 +165,7 @@ def remove_empty_cells(rna_sample):
     cells_for_removal = rna_sample.get_subset_by_barcodes(overlap_barcodes)
     cells_for_removal.cells_information.setattr('should_be_removed', None, True)
     cells_for_removal.cells_information.setattr('comment', None, comment)
-
+    return number_of_empty_cells
 
 def rearrange_tumor_clusters(tumor_clusters, num_of_cells):
     rearranged_clusters = [(convert_cluster_str_to_int(tumor_clusters[i*2]), tumor_clusters[i*2+1]) for i in range(int(len(tumor_clusters)/2))
@@ -343,6 +345,7 @@ def update_immune_cells(sample_id, rna_sample, immune_df):
 def go_over_all_samples(tumor_df, immune_df):
     samples = [ss.replace(".pkl", "") for ss in os.listdir(SAMPLES_INFORMATION_PATH) if (not 'csv' in ss and not 'xlsx' in ss)]
     create_folder(OUTPUT_PATH)
+    empty_cells_list = []
     for iter_idx, sample_id in enumerate(samples):
         print(f'{sample_id};\t{iter_idx+1}/{len(samples)}')
         # Extracts a single sample from PC
@@ -405,8 +408,10 @@ def go_over_all_samples(tumor_df, immune_df):
 
         # update 4.11.21:
         # we usually remove samples with a low number of genes (<500), but only if they do not have neutrophil markers.
-        remove_empty_cells(rna_sample)
-
+        number_of_empty_cells = remove_empty_cells(rna_sample)
+        empty_cells_list.append([sample_id, rna_sample.number_of_cells, number_of_empty_cells])
+        pd.DataFrame(empty_cells_list, columns=['id', 'n_cells', 'n_empty']).to_excel(
+        fr'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\outputs\temporal garbage\11.5.22\empty.xlsx')
         # Save an updated version of current sample_id with inferCNV changes.
         # pickle.dump((rna_sample), open(join(OUTPUT_PATH, f'{sample_id}.pkl'), 'wb'))
         rna_sample.save_cells_information(join(OUTPUT_PATH, f'{sample_id}.pkl'))

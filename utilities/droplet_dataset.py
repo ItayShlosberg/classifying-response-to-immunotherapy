@@ -550,6 +550,23 @@ class Cohort_RNAseq:
         cbarax = fig.add_axes([1, .7, .02, .2])
         plt.colorbar(sc, cax=cbarax);
 
+    def get_percent_gene(self, gene_name, gene_threshold=1):
+        gene_idx = self.gene_names.index(gene_name)
+        df = pd.DataFrame(np.array([self.samples, self.counts[:, gene_idx]]).T, columns=['sample', 'exp'])
+        df.exp = df.exp.astype(float) > gene_threshold
+        d1 = df.groupby('sample').sum().reset_index().rename(columns={'exp': f'c_{gene_name}'})
+        d2 = df.groupby('sample').count().reset_index().rename(columns={'exp': 'general_count'})
+
+        merged_df = d1.merge(d2, left_on='sample', right_on='sample')
+        merged_df[f'p_{gene_name}'] = merged_df[f'c_{gene_name}'] / merged_df.general_count
+        return merged_df.drop(columns=['general_count'])
+
+    def get_percent_genes(self, genes):
+        df = self.get_percent_gene(genes[0])
+        for gene in genes[1:]:
+            df = df.merge(self.get_percent_gene(self, gene), left_on='sample', right_on='sample')
+        return df
+
 
 class RNAseq_Sample:
 

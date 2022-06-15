@@ -4,96 +4,55 @@ Main script to manage experiments with XGBoost.
 
 import sys
 # from Models.feature_explorer import Feature_Explorer
+lib = r'/srv01/technion/shitay/Code/classifying_response_to_immunotherapy/'
 import sys
-import os
-lib = r'D:\Technion studies\Keren Laboratory\python_playground\classifying-response-to-immunotherapy\utilities\droplet_dataset'
-lib2 = r'D:\Technion studies\Keren Laboratory\python_playground\classifying-response-to-immunotherapy\utilities'
-lib3 = r'D:\Technion studies\Keren Laboratory\python_playground\classifying-response-to-immunotherapy\data_analysis'
-lib4 = r'D:\Technion studies\Keren Laboratory\python_playground\classifying-response-to-immunotherapy'
-lib5 = r'D:\Technion studies\Keren Laboratory\python_playground\classifying-response-to-immunotherapy\scripts'
 sys.path.append(lib)
-sys.path.append(lib2)
-sys.path.append(lib3)
-sys.path.append(lib4)
-sys.path.append(lib5)
-from os.path import join
-import pandas as pd
+from utilities.package_importing import *
+
 print("\n\n\n\n########## EXPERIMENT HAS STARTED ##########\n\n\n")
-from Models.enhanced_xgboost import DROPLETseq_Enhanced_XGboost
+# from MachineLearning.Models.enhanced_xgboost import DROPLETseq_Enhanced_XGboost
 # from DL.data_loading import *
 # from utilities.smart_seq_dataset import *
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_auc_score, accuracy_score, recall_score
 from sklearn import metrics
-from utilities.general_helpers import *
-from xgboost import plot_importance
+# from utilities.general_helpers import *
+# from xgboost import plot_importance
 import pickle
 from MachineLearning.ML_utilities.dataloder import *
 from MachineLearning.ML_utilities.general_utilities import *
+from MachineLearning.Models.enhanced_xgboost import *
 
 # CONFIG_PATH = r'/srv01/technion/shitay/Code/classifying_response_to_immunotherapy/cfg/server_cfg.yaml'
 # CONFIG_PATH = r'cfg/server_cfg.yaml'
 # CONFIG_PATH = r'cfg\factory_cfg\variance_2_test_percent0.30000000000000004_patients_post_cfg.yaml'
-# CONFIG_PATH = r'cfg\dummy.yaml'
-CONFIG_PATH = r'..\cfg\dummy.yaml'
+# CONFIG_PATH = r'C:\Users\KerenYlab\Desktop\Technion studies\Keren laboratory\python_playground\classifying-response-to-immunotherapy\MachineLearning\cfg\dummy.yaml'
+CONFIG_PATH = r'/srv01/technion/shitay/Code/classifying_response_to_immunotherapy/MachineLearning/cfg/server_dummy.yaml'
 # CONFIG_PATH = sys.argv[1] if len(sys.argv)>1 else r'cfg\dummy.yaml' # for terminal with outer config operation
 K = 20
 
 EXPERIMENT_NAME, EXPERIMENTS_FOLDER, config = load_yml(CONFIG_PATH)
 
 
+def use_markers_to_filter_cohort(cohort, MARKERS_FOLDER_PATH):
+    NON_RESPONSE_MARKER_PATH = join(MARKERS_FOLDER_PATH, r'non_response_immune_markers.xlsx')
+    RESPONSE_MARKER_PATH = join(MARKERS_FOLDER_PATH, r'response_immune_markers.xlsx')
+    non_response_markers = pd.read_excel(NON_RESPONSE_MARKER_PATH)
+    response_markers = pd.read_excel(RESPONSE_MARKER_PATH)
+    response_markers_indexes = [cohort.features.index(feature) for feature in response_markers.features if feature in cohort.features]
+    non_response_markers_indexes = [cohort.features.index(feature) for feature in non_response_markers.features if feature in cohort.features]
+    marker_indexes = response_markers_indexes + non_response_markers_indexes[:66]
+    cohort.filter_gene_by_indexes(marker_indexes)
+
 def build_datasets(dataset_config):
     # extracts params.
     COHORT_PATH = dataset_config['data_path']
     split_data_path = dataset_config['split_data_path']
-    save_division_path = dataset_config['save_division_path']
-    test_percent = dataset_config['test_percent']
-    patients_type = dataset_config['patients_type']
-    variance = dataset_config['variance']
-    protein_coding_genes = dataset_config['protein_coding_genes']
-    is_data_prior_to_therapy = dataset_config['prior_to_therapy']
     shuffle_dataset = dataset_config['shuffle']
     supervised_classification = dataset_config['supervised_classification']
-    filter_by_cell_type = dataset_config['specific_cell_type']
-    filter_by_immune_cell_type = dataset_config['immune_cell_type']
-
-
+    MARKERS_FOLDER_PATH = dataset_config['markers_folder_path']
     cohort = pickle.load(open(COHORT_PATH, 'rb'))
-
-    # 1. keeps only genes greater than given value.
-    if variance:
-        cohort.filter_genes_by_variance(variance)
-
-    # 2. keeps only protein coding genes.
-    if protein_coding_genes:
-        cohort.filter_protein_coding_genes(protein_coding_genes)
-
-    data_loader = Droplet_data_manager(cohort)
-
-
-    # . if the dataset is already split into test\train patients.
-    if split_data_path:
-        print(f"Taking exited data division from {split_data_path}")
-        # train_patients_names = pickle.load(open(split_data_path, "rb"))
-        # train_dataset, test_dataset = whole_rna_seq_dataset.split_by_patient_names(train_patients_names)
-        pass
-
-    else:
-        print(f"Dividing data into test/train sets")
-        data_loader.filter(filter_by_cell_type,
-                           filter_by_immune_cell_type,
-                           supervised_classification,
-                           is_data_prior_to_therapy)
-        if shuffle_dataset:
-            data_loader.shuffle_dataset()
-        X_train, X_test, y_train, y_test = data_loader.train_test_split(p_test_size=0.1, shuffle=True, verbose=False)
-
-
-        if save_division_path:  # saves the new division for future use.
-            data_loader.save_split(save_division_path)
-            print(f"New data sets divisions saved in {save_division_path}")
-            # pickle.dump((train_dataset.get_all_patients_names()), open(save_division_path, "wb"))
-
-
+    use_markers_to_filter_cohort(cohort, MARKERS_FOLDER_PATH)
+    data_loader = Droplet_data_manager(cohort, split_data_path, supervised_classification)
     return data_loader
 
 
@@ -103,32 +62,34 @@ def main(dataset_config, xgboost_config, experiment_config):
     experiment_path = os.path.join(EXPERIMENTS_FOLDER, EXPERIMENT_NAME)
     num_round = xgboost_config['num_round']
     early_stopping_rounds = xgboost_config['early_stopping_rounds']
-    k_folds = xgboost_config['k_folds']
-    model_path = xgboost_config['model_path']
+    max_depth = xgboost_config['max_depth']
+    #k_folds = xgboost_config['k_folds']
+    model_path = None #xgboost_config['model_path']
 
     # Builds datasets
+    print(f'Load dataset')
     data_loader = build_datasets(dataset_config)
-    X_train, X_test, y_train, y_test = data_loader.X_train, data_loader.X_test, data_loader.y_train, data_loader.y_test
-    print(f'Train dataset patients: {data_loader.train_patient_set}')
-    print(f'Test dataset patients: {data_loader.test_patient_set}')
+    x_train, x_test, y_train, y_test = data_loader.train_X, data_loader.test_X, data_loader.train_Y, data_loader.test_Y
+    x_val, y_val = data_loader.validation_X, data_loader.validation_Y
+    feature_names = data_loader.feature_names
 
-    if model_path:
-        model = pickle.load(open(model_path, "rb"))
-    else:
-        # Builds enhanced XGBoost model.
-        model = DROPLETseq_Enhanced_XGboost(num_round, early_stopping_rounds, k_folds)
+    model = NGModel(feature_names, num_round, early_stopping_rounds, max_depth)
 
-        # Trains.
-        model.train(X_train, y_train, verbose=False)
-
-
+    model.train(x_train, y_train, x_val, y_val, verbose=False)
+    # xgb.plot_tree(model.model, num_trees=2)
+    # plt.show()
+    # model.train(X_train, y_train, verbose=False)
     # Inferences on train set.
     print("Train inference")
-    y_pred = model.inference(X_train)
+    y_pred = model.inference(x_train)
     Metrics(y_train, y_pred).print_scores('Train cell')
 
+    print("val inference")
+    y_pred = model.inference(x_val)
+    Metrics(y_val, y_pred).print_scores('val cell')
+
     print("Test inference")
-    y_pred = model.inference(X_test)
+    y_pred = model.inference(x_test)
     Metrics(y_test, y_pred).print_scores('Test cell')
 
     # # patients_preds, cells_preds, df_groupby_patients = model.inference(train_dataset)
