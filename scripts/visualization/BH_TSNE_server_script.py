@@ -27,7 +27,7 @@ from utilities.droplet_dataset import get_requested_subset
 
 
 # OUTPUT_DIR = r'/storage/md_keren/shitay/outputs/TSNE/cohort_26.6.21/cytotoxic_t_cells'
-OUTPUT_DIR = r'/storage/md_keren/shitay/outputs/TSNE/cohort_5.5.22/immune/perplexity'
+OUTPUT_DIR = r'/storage/md_keren/shitay/outputs/TSNE/cohort_5.5.22/entire_cohort'
 
 # in use only in 'run_bh_tsne' function
 FILE_NAME = r'immune_bhtsne_5.5.22.pkl'
@@ -35,7 +35,7 @@ CSV_SUFFIX = r'immune_bhtsne_5.5.22.csv'
 PERPLEXITY = 30.0    # default=30.0
 
 # cohort should be normalized and variance filtered (4k genes)
-COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/M97_M173/cohort/normalized/5.5.22/immune_cells_normalized_5.5.22_4k_genes.pkl'
+COHORT_PATH = r'/storage/md_keren/shitay/Data/droplet_seq/M97_M173/cohort/normalized/5.5.22/cohort_normalized_5.5.22_4k_genes.pkl'
 
 SUBSET = None # 'None' # None - all cells, MYELOIDS/CYTOTOXIC_T_CELLS
 
@@ -99,5 +99,6 @@ def run_bh_tsne_all_perplexity():
 
 
 if __name__ == '__main__':
-    # run_bh_tsne()
-    run_bh_tsne_all_perplexity()
+    run_bh_tsne()
+    # run_bh_tsne_all_perplexity()
+

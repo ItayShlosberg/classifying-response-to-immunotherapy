@@ -517,6 +517,7 @@ class Cohort_RNAseq:
         :return:
         """
         self.zscore_nor_gene_exp = scipy.stats.zscore(self.counts, axis=0, ddof=1)
+        self.zscore_nor_gene_exp[np.isnan(self.zscore_nor_gene_exp)] = 0
 
     def plot_tsne_gene(self, gene_name, cmap=None):
         if not cmap:
@@ -550,7 +551,7 @@ class Cohort_RNAseq:
         cbarax = fig.add_axes([1, .7, .02, .2])
         plt.colorbar(sc, cax=cbarax);
 
-    def get_percent_gene(self, gene_name, gene_threshold=1):
+    def get_percent_gene_per_patient(self, gene_name, gene_threshold=1):
         gene_idx = self.gene_names.index(gene_name)
         df = pd.DataFrame(np.array([self.samples, self.counts[:, gene_idx]]).T, columns=['sample', 'exp'])
         df.exp = df.exp.astype(float) > gene_threshold
@@ -561,7 +562,7 @@ class Cohort_RNAseq:
         merged_df[f'p_{gene_name}'] = merged_df[f'c_{gene_name}'] / merged_df.general_count
         return merged_df.drop(columns=['general_count'])
 
-    def get_percent_genes(self, genes):
+    def get_percent_genes_per_patient(self, genes):
         df = self.get_percent_gene(genes[0])
         for gene in genes[1:]:
             df = df.merge(self.get_percent_gene(self, gene), left_on='sample', right_on='sample')
