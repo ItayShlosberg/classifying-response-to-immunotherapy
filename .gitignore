@@ -22,3 +22,7 @@ Experiments/
 *.yaml
 
 XGBoost_facilities/original_files/activated_t_cells/gene_scores/
+
+XGBoost_facilities/visualization/shapely_top_20.xlsx
+
+data_analysis/SERVER_NBS/CLUSTERING/TSNE_KMEANS.ipynb
